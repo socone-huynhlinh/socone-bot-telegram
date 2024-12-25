@@ -3,6 +3,8 @@ node_modules/
 
 # Environment variables
 .env
+.package-lock.json
+.gitignore
 
 # Log files
 *.log
@@ -21,3 +23,4 @@ node_modules/
 # Backup or temporary files
 *.swp
 *.bak
+
