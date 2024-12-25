@@ -1,0 +1,23 @@
+# Node modules
+node_modules/
+
+# Environment variables
+.env
+
+# Log files
+*.log
+
+# macOS
+.DS_Store
+
+# VSCode
+.vscode/
+*.code-workspace
+
+# Prettier or ESLint cache
+.prettiercache
+.eslintcache
+
+# Backup or temporary files
+*.swp
+*.bak
