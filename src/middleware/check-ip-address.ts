@@ -17,6 +17,10 @@ export const validateMacMiddleware = async (req: http.IncomingMessage, res: http
     try {
         const validMacs = await getAllMacAddress()
 
+        console.log("Danh sách địa chỉ MAC hợp lệ:", validMacs)
+        console.log(`Danh sách hợp lệ: ${validMacs.map(v => v.mac_address).join(", ")}`)
+        const listValidMacs = validMacs.map(v => v.mac_address).join(", ")
+
         arp.getMAC(userIp, (err: any, mac: string) => {
             if (err) {
                 console.error(`Không thể lấy địa chỉ MAC cho IP ${userIp}:`, err)
@@ -26,7 +30,7 @@ export const validateMacMiddleware = async (req: http.IncomingMessage, res: http
             }
 
             console.log(`Địa chỉ MAC của IP ${userIp}: ${mac}`)
-            if (!validMacs.includes(mac.toLowerCase())) {
+            if (!listValidMacs.includes(mac.toLowerCase())) {
                 console.log("Địa chỉ MAC không hợp lệ!")
                 res.statusCode = 403
                 res.end("Thiết bị không được phép truy cập.")

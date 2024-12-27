@@ -1,5 +1,6 @@
 import TelegramBot from "node-telegram-bot-api"
 import { handleCheckin } from "./handlers/checkin"
+import { handleRemote } from "./handlers/remote"
 import { handleCheckout } from "./handlers/checkin"
 import { handleGetListStaffs } from "./handlers/list-company-staffs"
 
@@ -18,6 +19,10 @@ bot.on("message", (msg) => {
     switch (true) {
         case /\/checkin/.test(text):
             handleCheckin(bot, msg)
+            break
+
+        case /\/remote/.test(text):
+            handleRemote(bot, msg)
             break
 
         case /\/checkout/.test(text):

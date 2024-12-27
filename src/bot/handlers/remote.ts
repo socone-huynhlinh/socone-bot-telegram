@@ -5,7 +5,7 @@ import { sessionDay } from "../../services/common/device-infor"
 
 // src/handlers/checkin.ts
 
-export const handleCheckin = async (bot: TelegramBot, msg: TelegramBot.Message) => {
+export const handleRemote = async (bot: TelegramBot, msg: TelegramBot.Message) => {
     const chatId = msg.chat.id
     if (!msg.from) {
         bot.sendMessage(chatId, "Không thể thực hiện Check-in vì thiếu thông tin người dùng.")
@@ -16,7 +16,7 @@ export const handleCheckin = async (bot: TelegramBot, msg: TelegramBot.Message) 
 
     console.log(`Yêu cầu Check-in từ: ${userName}`)
 
-    const checkinUrl = `http://192.168.1.12:3000/check-device?chatId=${chatId}&userName=${encodeURIComponent(userName)}&action=checkin`
+    const checkinUrl = `http://117.2.125.118:3000/check-remote?chatId=${chatId}&userName=${encodeURIComponent(userName)}&action=checkin`
     // bot.sendMessage(chatId, "Hãy nhấp vào nút bên dưới để thực hiện Check-in của bạn:", {
     //     reply_markup: {
     //         inline_keyboard: [
@@ -39,7 +39,7 @@ export const handleCheckin = async (bot: TelegramBot, msg: TelegramBot.Message) 
 
             bot.sendMessage(
             chatId,
-            `<b>${userName} - #dev</b>\nCa chính - ${new Date().toLocaleDateString('vi-VN')}\n- Check: ${session}\n- Hình thức: Làm việc tại công ty\n- ${lateMessage}\n\n<b>Cảm ơn vì đã luôn đúng giờ, ngày mới an lành nhé ☀️</b>`,
+            `<b>${userName} - #dev</b>\nCa chính - ${new Date().toLocaleDateString('vi-VN')}\n- Check: ${session}\n- Hình thức: Làm việc Remote\n- ${lateMessage}\n\n<b>Cảm ơn vì đã luôn đúng giờ, ngày mới an lành nhé ☀️</b>`,
             { parse_mode: "HTML" }
             )
         }
