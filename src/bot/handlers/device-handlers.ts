@@ -6,13 +6,13 @@ export const handleCheckinRequest = (chatId: string, userName: string, res: http
     // Xử lý logic Check-in ở đây
     // Ví dụ: Cập nhật cơ sở dữ liệu, gửi thông báo, etc.
     res.statusCode = 200
-    res.setHeader("Content-Type", "text/plain")
+    res.setHeader("Content-Type", "text/plain; charset=utf-8")
     res.end(`Check-in thành công cho người dùng ${userName} (Chat ID: ${chatId})`)
 }
 
 export const handleCheckoutRequest = (chatId: string, userName: string, res: http.ServerResponse) => {
     // Xử lý logic Check-out ở đây
     res.statusCode = 200
-    res.setHeader("Content-Type", "text/plain")
+    res.setHeader("Content-Type", "text/plain; charset=utf-8")
     res.end(`Check-out thành công cho người dùng ${userName} (Chat ID: ${chatId})`)
 }
