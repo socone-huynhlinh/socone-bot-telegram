@@ -1,9 +1,8 @@
 // src/middleware/validateMacMiddleware.ts
 import http from "http"
-import url from "url"
 import { getAllMacAddress } from "../services/common/device-infor"
-const arp = require("node-arp")
 
+const arp = require("node-arp")
 export const validateMacMiddleware = async (req: http.IncomingMessage, res: http.ServerResponse, next: () => void) => {
     let userIp = (req.headers["x-forwarded-for"] as string) || req.socket.remoteAddress || ""
 
