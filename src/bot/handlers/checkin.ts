@@ -1,5 +1,4 @@
 import TelegramBot from "node-telegram-bot-api"
-import { validateMacMiddleware } from "../../middleware/check-ip-address"
 
 // src/handlers/checkin.ts
 
@@ -13,7 +12,7 @@ export const handleCheckin = (bot: TelegramBot, msg: TelegramBot.Message) => {
 
     console.log(`Yêu cầu Check-in từ: ${userName}`)
 
-    const checkinUrl = `http://192.168.1.12:3000/check-device?chatId=${chatId}&userName=${encodeURIComponent(userName)}&action=checkin`
+    const checkinUrl = `http://172.26.41.219:3000/check-device?chatId=${chatId}&userName=${encodeURIComponent(userName)}&action=checkin`
     bot.sendMessage(chatId, "Hãy nhấp vào nút bên dưới để thực hiện Check-in của bạn:", {
         reply_markup: {
             inline_keyboard: [
@@ -39,7 +38,7 @@ export const handleCheckout = (bot: TelegramBot, msg: TelegramBot.Message) => {
 
     console.log(`Yêu cầu Check-out từ: ${userName}`)
 
-    const checkoutUrl = `http://192.168.1.12:3000/check-device?chatId=${chatId}&userName=${encodeURIComponent(userName)}&action=checkout`
+    const checkoutUrl = `http://172.26.41.219:3000/check-device?chatId=${chatId}&userName=${encodeURIComponent(userName)}&action=checkout`
     bot.sendMessage(chatId, "Hãy nhấp vào nút bên dưới để thực hiện Check-out của bạn:", {
         reply_markup: {
             inline_keyboard: [

@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 3000
 interface Route {
     path: string
     method: string
-    handler: (query: any, res: http.ServerResponse) => void
+    handler: (query: { chatId?: string; userName?: string; action?: string }, res: http.ServerResponse) => void
     middleware?: Array<(req: http.IncomingMessage, res: http.ServerResponse, next: () => void) => void>
 }
 
