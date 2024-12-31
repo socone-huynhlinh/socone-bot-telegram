@@ -57,6 +57,7 @@ CREATE TABLE "staff_attendances_work" (
   "staff_id" INTEGER NOT NULL,
   "check_in_time" TIMESTAMPTZ NOT NULL,   -- Sử dụng TIMESTAMPTZ thay vì DATETIME
   "check_out_time" TIMESTAMPTZ,          -- Sử dụng TIMESTAMPTZ thay vì DATETIME
+  "type_work" VARCHAR(30),
   "created_at" TIMESTAMPTZ DEFAULT (NOW()),
   "updated_at" TIMESTAMPTZ,
   CONSTRAINT "staff_attendances_work_staff_id_fkey" 
