@@ -29,11 +29,10 @@ const routes: Route[] = [
                 res.end("Thiếu tham số cần thiết.")
                 return
             }
-
             if (action === "checkin") {
-                handleCheckinRequest(chatId as string, userName as string, res)
+                handleCheckinRequest(chatId as number, userName as string, action as string, res)
             } else if (action === "checkout") {
-                handleCheckoutRequest(chatId as string, userName as string, res)
+                handleCheckoutRequest(chatId as string, userName as string, action as string, res)
             } else {
                 res.statusCode = 400
                 res.end("Hành động không hợp lệ.")
@@ -41,6 +40,26 @@ const routes: Route[] = [
         },
         middleware: [validateMacMiddleware],
     },
+    {
+        path: "/check-remote",
+        method: "GET",
+        handler: (query, res) => {
+            const { chatId, userName, action } = query
+            if (!chatId || !userName || !action) {
+                res.statusCode = 400
+                res.end("Thiếu tham số cần thiết.")
+                return
+            }
+            if (action === "checkinRemote") {
+                handleCheckinRequest(chatId as number, userName as string, action as string, res)
+            } else if (action === "checkoutRemote") {
+                handleCheckoutRequest(chatId as string, userName as string, action as string, res)
+            } else {
+                res.statusCode = 400
+                res.end("Hành động không hợp lệ.")
+            }
+        },
+    }
     // Bạn có thể thêm các route khác ở đây nếu cần
 ]
 
