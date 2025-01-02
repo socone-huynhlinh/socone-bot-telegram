@@ -19,13 +19,11 @@ export class TelegramAccount {
     first_name?: string
     last_name?: string
     staff_id: string
-    work_mode: string
 
-    constructor(id: number, first_name: string, last_name: string, staff_id: string, work_mode: string) {
+    constructor(id: number, first_name: string, last_name: string, staff_id: string) {
         this.id = id
         this.first_name = first_name
         this.last_name = last_name
         this.staff_id = staff_id
-        this.work_mode = work_mode
     }
 }

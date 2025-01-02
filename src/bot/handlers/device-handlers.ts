@@ -20,14 +20,12 @@ export const handleCheckinRequest = async (chatId: number, userName: string, act
 
         console.log("0: ", chatId);
 
-        // Lấy đối tượng Telegram Account
         const account: TelegramAccount | null = await getAccountById(chatId)
         if (account) {
             console.log(`1: ${account.id}`)
             console.log(`2: ${account.first_name}`)
             console.log(`3: ${account.last_name}`)
             console.log(`4: ${account.staff_id}`)
-            console.log(`5: ${account.work_mode}`)
             await writeCheckin(account.staff_id, true, lateFormatted, 'office');
         } else {
             console.log("Không tìm thấy tài khoản.")
@@ -49,6 +47,20 @@ export const handleCheckinRequest = async (chatId: number, userName: string, act
         }
     }
     else if (action === 'checkinRemote') {
+
+        console.log("0: ", chatId);
+
+        const account: TelegramAccount | null = await getAccountById(chatId)
+        if (account) {
+            console.log(`1: ${account.id}`)
+            console.log(`2: ${account.first_name}`)
+            console.log(`3: ${account.last_name}`)
+            console.log(`4: ${account.staff_id}`)
+            await writeCheckin(account.staff_id, true, lateFormatted, 'remote');
+        } else {
+            console.log("Không tìm thấy tài khoản.")
+        }
+
         if (lateMessage === '') {
             bot.sendMessage(
                 chatId,

@@ -23,7 +23,6 @@ export const getAccountById = async (chatId: number): Promise<TelegramAccount | 
             row.first_name,
             row.last_name,
             row.staff_id,
-            row.work_mode
         )
         return telegramAccount
     } catch (err) {
