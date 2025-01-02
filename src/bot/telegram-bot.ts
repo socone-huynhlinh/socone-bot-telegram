@@ -3,6 +3,8 @@ import { handleCheckin } from "./handlers/checkin"
 import { handleCheckinRemote, handleCheckoutRemote } from "./handlers/checkinRemote"
 import { handleCheckout } from "./handlers/checkin"
 import { handleGetListStaffs } from "./handlers/list-company-staffs"
+import { handleRequestOff } from "./handlers/request-off"
+import { handleAdminResponse } from "./handlers/admin-response"
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
 
@@ -33,6 +35,10 @@ bot.on("message", (msg) => {
             handleCheckoutRemote(bot, msg)
             break
 
+        case /^\/off$/.test(text):
+            handleRequestOff(bot, msg)
+            break
+
         case /\/list-company-staffs/.test(text):
             handleGetListStaffs(bot, msg)
             break
@@ -42,6 +48,8 @@ bot.on("message", (msg) => {
             break
     }
 })
+
+handleAdminResponse(bot);
 
 console.log("Bot Telegram đã được khởi động!")
 

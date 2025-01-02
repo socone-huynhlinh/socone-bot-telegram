@@ -35,11 +35,8 @@ export const writeCheckin = async (staffId: string, isCheckin: boolean, lateTime
     try {
         // Thực hiện ghi trạng thái checkin của nhân viên
         const updateQuery = `
-            UPDATE checkin
-            SET is_checkin = $2,
-                late_time = $3,
-                work_mode = $4
-            WHERE staff_id = $1 AND date_checkin::date = CURRENT_DATE
+            INSERT INTO checkin (staff_id, date_checkin, is_checkin, late_time, work_mode)
+            VALUES ($1, DATE_TRUNC('second', NOW()), $2, $3, $4) -- Thêm bản ghi mới
             RETURNING *
         `
         const result = await client.query(updateQuery, [staffId, isCheckin, lateTime, workMode]) 
