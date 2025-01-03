@@ -1,10 +1,12 @@
+package-lock.json
+.gitignore
+
 # Node modules
 node_modules/
 
 # Environment variables
 .env
-.package-lock.json
-.gitignore
+
 
 # Log files
 *.log
