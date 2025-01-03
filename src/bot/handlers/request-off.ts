@@ -1,7 +1,7 @@
 import TelegramBot from "node-telegram-bot-api";
 import { getAccountById } from "../../services/staff/get-telegram-account";
 import { TelegramAccount } from "../../models/user";
-import { requestStatus } from "../../config/request-status"; // Import trạng thái dùng chung
+import { requestStatus } from "../../config/request-status"; 
 
 // Hàm kiểm tra ngày hợp lệ
 const isValidDate = (dateStr: string): boolean => {
@@ -14,13 +14,12 @@ const isValidDate = (dateStr: string): boolean => {
 };
 
 // Hàm xử lý yêu cầu nghỉ phép
-export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Message) => {
-    const chatId = msg.chat.id; // Lấy ID người dùng
-    const userName = `${msg.from?.first_name || ""} ${msg.from?.last_name || ""}`.trim(); // Tên người dùng
+export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Message, onFinish: () => void) => {
+    const chatId = msg.chat.id; 
+    const userName = `${msg.from?.first_name || ""} ${msg.from?.last_name || ""}`.trim(); 
 
     console.log(`Yêu cầu Off từ: ${userName}`);
 
-    // Kiểm tra thông tin tài khoản Telegram của người dùng
     const account: TelegramAccount | null = await getAccountById(chatId);
 
     if (!account) {
@@ -28,43 +27,39 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
         return;
     }
 
-    // Yêu cầu người dùng nhập thông tin nghỉ phép
     bot.sendMessage(
         chatId,
         'Vui lòng chọn ngày bạn cần off và lý do muốn nghỉ, theo cú pháp:\n- Ngày/Tháng/Năm-Lý do\n- Ví dụ: 01/01/2024-bệnh'
     );
 
-    // Lắng nghe tin nhắn tiếp theo để lấy ngày và lý do nghỉ
     bot.once("message", async (response) => {
         if (!response.text) {
             bot.sendMessage(chatId, "Lỗi: Không tìm thấy nội dung tin nhắn. Vui lòng thử lại!");
+            onFinish();
             return;
         }
 
-        // Phân tách ngày và lý do
         const [offDate, offReason] = response.text.split("-").map((str) => str.trim());
 
         console.log("Ngày nghỉ:", offDate);
         console.log("Lý do:", offReason);
 
-        // Kiểm tra định dạng ngày
         if (!isValidDate(offDate)) {
             bot.sendMessage(
                 chatId,
                 "Ngày tháng không hợp lệ, vui lòng nhập lại theo cú pháp ngày/tháng/năm-lý do, ví dụ 01/01/2024-bệnh"
             );
+            onFinish();
             return;
         }
 
-        // Thông báo xác nhận đến người dùng
-        bot.sendMessage(
-            chatId,
-            "Kết quả sẽ được Admin xác nhận, cảm ơn bạn đã thông báo!"
-        );
+        // bot.sendMessage(
+        //     chatId,
+        //     "Kết quả sẽ được Admin xác nhận, cảm ơn bạn đã thông báo!"
+        // );
 
-        // Gửi yêu cầu đến Admin với inline keyboard
         bot.sendMessage(
-            -4620420034, // ID nhóm Admin
+            -4620420034, 
             `Yêu cầu off từ: ${userName}\nThời gian: ${offDate}\nLý do: ${offReason}`,
             {
                 reply_markup: {
@@ -78,9 +73,20 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
             }
         );
 
-        // Đánh dấu yêu cầu chưa được xử lý
+        // // Đánh dấu yêu cầu chưa được xử lý
+        // const requestKey = `${chatId}_${offDate}`;
+        // requestStatus.set(requestKey, false); // False = chưa xử lý
+
         const requestKey = `${chatId}_${offDate}`;
+        if (requestStatus.has(requestKey)) {
+            bot.sendMessage(chatId, "Yêu cầu này đã được gửi và đang chờ xử lý.");
+            onFinish();
+            return;
+        }
+
         requestStatus.set(requestKey, false); // False = chưa xử lý
+        bot.sendMessage(chatId, "Kết quả sẽ được Admin xác nhận, cảm ơn bạn đã thông báo!");
+        onFinish();
     });
 };
 
@@ -89,7 +95,6 @@ export const handleAdminResponse = async (bot: TelegramBot) => {
     bot.on("callback_query", async (callbackQuery) => {
         const data = callbackQuery.data;
 
-        // Kiểm tra nếu data không tồn tại
         if (!data) {
             await bot.answerCallbackQuery(callbackQuery.id, { text: "Dữ liệu callback không hợp lệ." });
             return;
@@ -97,11 +102,9 @@ export const handleAdminResponse = async (bot: TelegramBot) => {
 
         console.log(callbackQuery);
 
-        // Phân tách dữ liệu từ callback
         const [action, userChatId, offDate] = data.split('_');
         const userId = parseInt(userChatId);
 
-        // Tạo key để kiểm tra trạng thái xử lý
         const requestKey = `${userId}_${offDate}`;
 
         console.log('Trạng thái yêu cầu:', requestStatus.get(requestKey));
@@ -123,7 +126,6 @@ export const handleAdminResponse = async (bot: TelegramBot) => {
             }
         ).catch((err) => console.error('Lỗi khi chỉnh sửa nút:', err.message));
 
-        // Xử lý phản hồi từ admin
         if (action === 'approve') {
             await bot.sendMessage(-4620420034, `✅ Bạn đã phê duyệt yêu cầu off ngày ${offDate}.`);
             await bot.sendMessage(userId, `Yêu cầu off ngày ${offDate} của bạn đã được Admin phê duyệt. 🎉`);

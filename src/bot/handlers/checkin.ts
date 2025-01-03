@@ -30,7 +30,7 @@ export const handleCheckin = async (bot: TelegramBot, msg: TelegramBot.Message) 
         }
     }
 
-    const checkinUrl = `http://192.168.1.3:3000/check-device?chatId=${chatId}&userName=${encodeURIComponent(userName)}&action=checkin`
+    const checkinUrl = `http://192.168.1.2:3000/check-device?chatId=${chatId}&userName=${encodeURIComponent(userName)}&action=checkin`
     bot.sendMessage(chatId, "Hãy nhấp vào nút bên dưới để thực hiện Check-in của bạn:", {
         reply_markup: {
             inline_keyboard: [
@@ -56,7 +56,7 @@ export const handleCheckout = (bot: TelegramBot, msg: TelegramBot.Message) => {
 
     console.log(`Yêu cầu Check-out từ: ${userName}`)
 
-    const checkoutUrl = `http://192.168.1.3:3000/check-device?chatId=${chatId}&userName=${encodeURIComponent(userName)}&action=checkout`
+    const checkoutUrl = `http://192.168.1.2:3000/check-device?chatId=${chatId}&userName=${encodeURIComponent(userName)}&action=checkout`
     bot.sendMessage(chatId, "Hãy nhấp vào nút bên dưới để thực hiện Check-out của bạn:", {
         reply_markup: {
             inline_keyboard: [
