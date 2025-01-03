@@ -1,0 +1,1 @@
+export const registerStatus = new Map<string, boolean>();
