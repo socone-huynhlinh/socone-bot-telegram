@@ -1,14 +1,13 @@
 import TelegramBot from "node-telegram-bot-api";
-import { addStaff } from "../../services/admin/staff-manage";
 import { Staff } from "../../models/user";
 import { registerStatus } from "../../config/register-status";
-
+import { savePendingRegistration, hasPendingRegistration } from "../../config/registration-manager";
 // Regex kiểm tra thông tin
 const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const phoneRegex = /^[0-9]{10,11}$/;
 
 // Lưu tạm thông tin đăng ký
-const pendingRegistrations = new Map<string, Staff>();
+// const pendingRegistrations = new Map<string, Staff>();
 
 export const handleRegister = async (bot: TelegramBot, msg: TelegramBot.Message, onFinish: () => void) => {
     const chatId = msg.chat.id;
@@ -25,6 +24,8 @@ export const handleRegister = async (bot: TelegramBot, msg: TelegramBot.Message,
     bot.once("message", async (response) => {
         try {
             const userMessage = response.text;
+
+            console.log("Response:", userMessage)
 
             if (!userMessage) {
                 bot.sendMessage(chatId, "Lỗi: Không tìm thấy nội dung tin nhắn. Vui lòng thử lại!");
@@ -73,15 +74,15 @@ export const handleRegister = async (bot: TelegramBot, msg: TelegramBot.Message,
                 return;
             }
 
-            const staff: Staff = {
-                id: "",
-                full_name: fullName,
-                role_name: roleName,
-                phone_number: phoneNumber,
-                company_mail: companyMail,
-            };
+            // const staff: Staff = {
+            //     id: "",
+            //     full_name: fullName,
+            //     role_name: roleName,
+            //     phone_number: phoneNumber,
+            //     company_mail: companyMail,
+            // };
 
-            pendingRegistrations.set(requestKey, staff);
+            // pendingRegistrations.set(requestKey, staff);
             registerStatus.set(requestKey, false); // False = chưa xử lý
 
             // Gửi yêu cầu tới admin
@@ -104,81 +105,15 @@ export const handleRegister = async (bot: TelegramBot, msg: TelegramBot.Message,
                     }
                 }
             );
-
-            bot.sendMessage(chatId, "Yêu cầu của bạn đã được gửi đến admin để phê duyệt. Vui lòng chờ.");
+            await bot.sendMessage(chatId, "Yêu cầu của bạn đã được gửi. Vui lòng chờ xác nhận từ Admin.");
         } catch (err) {
             console.error("Error registering staff:", err);
-            bot.sendMessage(chatId, "Đã xảy ra lỗi khi đăng ký. Vui lòng thử lại sau.");
+            await bot.sendMessage(chatId, "Đã xảy ra lỗi khi đăng ký. Vui lòng thử lại sau.");
         } finally {
             onFinish();
         }
     });
 };
 
-export const handleAdminResponse = async (bot: TelegramBot) => {
-    bot.on("callback_query", async (callbackQuery) => {
-        const data = callbackQuery.data;
 
-        if (!data) {
-            await bot.answerCallbackQuery(callbackQuery.id, { text: "Dữ liệu callback không hợp lệ." });
-            return;
-        }
-
-        const [action, type, userChatId, companyMail] = data.split('_');
-        if (type !== "register") return;
-
-        const chatId = parseInt(userChatId);
-        const requestKey = `${chatId}_${companyMail}`;
-        const staff = pendingRegistrations.get(requestKey);
-
-        if (!staff) {
-            await bot.answerCallbackQuery(callbackQuery.id, { text: "Yêu cầu không tồn tại hoặc đã được xử lý." });
-            return;
-        }
-
-        if (registerStatus.get(requestKey)) {
-            await bot.answerCallbackQuery(callbackQuery.id, { text: "Yêu cầu này đã được xử lý trước đó." });
-            return;
-        }
-
-        registerStatus.set(requestKey, true); // Đánh dấu yêu cầu đã xử lý
-
-        if (action === "approve") {
-            // Lưu nhân viên vào cơ sở dữ liệu
-            await addStaff(staff);
-
-            await bot.sendMessage(chatId, `🎉 Yêu cầu đăng ký của bạn đã được admin phê duyệt. Chào mừng bạn!`);
-            await bot.sendMessage(
-                -4620420034,
-                `✅ Bạn đã phê duyệt yêu cầu đăng ký của:\n👤 ${staff.full_name}\n💼 Vai trò: ${staff.role_name}\n📧 Email: ${staff.company_mail}`
-            );
-        } else if (action === "reject") {
-            await bot.sendMessage(chatId, `❌ Yêu cầu đăng ký của bạn đã bị admin từ chối.`);
-            await bot.sendMessage(
-                -4620420034,
-                `❌ Bạn đã từ chối yêu cầu đăng ký của:\n👤 ${staff.full_name}\n💼 Vai trò: ${staff.role_name}\n📧 Email: ${staff.company_mail}`
-            );
-        }
-
-        // Xóa yêu cầu đã xử lý
-        pendingRegistrations.delete(requestKey);
-
-        await bot.editMessageReplyMarkup(
-            {
-                inline_keyboard: [
-                    [
-                        { text: 'Phê duyệt ✅ (Đã xử lý)', callback_data: 'disabled' },
-                        { text: 'Từ chối ❌ (Đã xử lý)', callback_data: 'disabled' }
-                    ]
-                ]
-            },
-            {
-                chat_id: callbackQuery.message?.chat.id,
-                message_id: callbackQuery.message?.message_id
-            }
-        );
-
-        await bot.answerCallbackQuery(callbackQuery.id, { text: "Đã xử lý thành công!" });
-    });
-};
 

@@ -65,8 +65,8 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
                 reply_markup: {
                     inline_keyboard: [
                         [
-                            { text: "Phê duyệt ✅", callback_data: `approve_${chatId}_${offDate}` },
-                            { text: "Từ chối ❌", callback_data: `reject_${chatId}_${offDate}` }
+                            { text: "Phê duyệt ✅", callback_data: `approve_off_${chatId}_${offDate}` },
+                            { text: "Từ chối ❌", callback_data: `reject_off_${chatId}_${offDate}` }
                         ]
                     ]
                 }
@@ -91,55 +91,55 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
 };
 
 
-export const handleAdminResponse = async (bot: TelegramBot) => {
-    bot.on("callback_query", async (callbackQuery) => {
-        const data = callbackQuery.data;
+// export const handleAdminResponse = async (bot: TelegramBot) => {
+//     bot.on("callback_query", async (callbackQuery) => {
+//         const data = callbackQuery.data;
 
-        if (!data) {
-            await bot.answerCallbackQuery(callbackQuery.id, { text: "Dữ liệu callback không hợp lệ." });
-            return;
-        }
+//         if (!data) {
+//             await bot.answerCallbackQuery(callbackQuery.id, { text: "Dữ liệu callback không hợp lệ." });
+//             return;
+//         }
 
-        console.log(callbackQuery);
+//         console.log(callbackQuery);
 
-        const [action, userChatId, offDate] = data.split('_');
-        const userId = parseInt(userChatId);
+//         const [action, userChatId, offDate] = data.split('_');
+//         const userId = parseInt(userChatId);
 
-        const requestKey = `${userId}_${offDate}`;
+//         const requestKey = `${userId}_${offDate}`;
 
-        console.log('Trạng thái yêu cầu:', requestStatus.get(requestKey));
+//         console.log('Trạng thái yêu cầu:', requestStatus.get(requestKey));
 
-        requestStatus.set(requestKey, true);
+//         requestStatus.set(requestKey, true);
 
-        await bot.editMessageReplyMarkup(
-            {
-                inline_keyboard: [
-                    [
-                        { text: 'Phê duyệt ✅ (Đã xử lý)', callback_data: 'disabled' },
-                        { text: 'Từ chối ❌ (Đã xử lý)', callback_data: 'disabled' }
-                    ]
-                ]
-            },
-            {
-                chat_id: callbackQuery.message?.chat.id,
-                message_id: callbackQuery.message?.message_id
-            }
-        ).catch((err) => console.error('Lỗi khi chỉnh sửa nút:', err.message));
+//         await bot.editMessageReplyMarkup(
+//             {
+//                 inline_keyboard: [
+//                     [
+//                         { text: 'Phê duyệt ✅ (Đã xử lý)', callback_data: 'disabled' },
+//                         { text: 'Từ chối ❌ (Đã xử lý)', callback_data: 'disabled' }
+//                     ]
+//                 ]
+//             },
+//             {
+//                 chat_id: callbackQuery.message?.chat.id,
+//                 message_id: callbackQuery.message?.message_id
+//             }
+//         ).catch((err) => console.error('Lỗi khi chỉnh sửa nút:', err.message));
 
-        if (action === 'approve') {
-            await bot.sendMessage(-4620420034, `✅ Bạn đã phê duyệt yêu cầu off ngày ${offDate}.`);
-            await bot.sendMessage(userId, `Yêu cầu off ngày ${offDate} của bạn đã được Admin phê duyệt. 🎉`);
-        } else if (action === 'reject') {
-            await bot.sendMessage(-4620420034, `❌ Bạn đã từ chối yêu cầu off ngày ${offDate}.`);
-            await bot.sendMessage(userId, `Yêu cầu off ngày ${offDate} của bạn đã bị Admin từ chối. ❌`);
-        }
+//         if (action === 'approve') {
+//             await bot.sendMessage(-4620420034, `✅ Bạn đã phê duyệt yêu cầu off ngày ${offDate}.`);
+//             await bot.sendMessage(userId, `Yêu cầu off ngày ${offDate} của bạn đã được Admin phê duyệt. 🎉`);
+//         } else if (action === 'reject') {
+//             await bot.sendMessage(-4620420034, `❌ Bạn đã từ chối yêu cầu off ngày ${offDate}.`);
+//             await bot.sendMessage(userId, `Yêu cầu off ngày ${offDate} của bạn đã bị Admin từ chối. ❌`);
+//         }
 
-        // Đánh dấu trạng thái đã xử lý
-        if (requestStatus.get(requestKey)) {
-            await bot.answerCallbackQuery(callbackQuery.id, { text: "Đã xử lý thành công!" });
-            return;
-        }
+//         // Đánh dấu trạng thái đã xử lý
+//         if (requestStatus.get(requestKey)) {
+//             await bot.answerCallbackQuery(callbackQuery.id, { text: "Đã xử lý thành công!" });
+//             return;
+//         }
 
-        await bot.answerCallbackQuery(callbackQuery.id);
-    });
-};
+//         await bot.answerCallbackQuery(callbackQuery.id);
+//     });
+// };
