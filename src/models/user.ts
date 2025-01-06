@@ -1,18 +1,10 @@
-export class Staff {
+export type Staff = {
     id: string
     full_name: string
     role_name: string
     phone_number: string
     company_mail: string
-
-    constructor(id: string, full_name: string, role_name: string, phone_number: string, company_mail: string) {
-        this.id = id
-        this.full_name = full_name
-        this.role_name = role_name
-        this.phone_number = phone_number
-        this.company_mail = company_mail
-    }
-}
+};
 
 export class TelegramAccount {
     id?: number
