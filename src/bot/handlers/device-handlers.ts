@@ -16,7 +16,9 @@ export const handleCheckinRequest = async (chatId: number, userName: string, act
     const { session, lateFormatted, lateTime } = sessionDay();
     const lateMessage = lateTime > 0 ? `Đi trễ: ${lateFormatted}` : '';
 
-    if (action === 'checkin') {
+    console.log("Action neeeee: ", action);
+
+    if (action.split("_")[0] === "checkin" && action.split("_")[1] === "main") {
 
         console.log("0: ", chatId);
 
@@ -46,6 +48,34 @@ export const handleCheckinRequest = async (chatId: number, userName: string, act
             )
         }
     }
+    else if (action.split("_")[0] === "checkin" && action.split("_")[1] === "special") {
+        console.log("0: ", chatId);
+
+        const account: TelegramAccount | null = await getAccountById(chatId)
+        if (account) {
+            console.log(`1: ${account.id}`)
+            console.log(`2: ${account.first_name}`)
+            console.log(`3: ${account.last_name}`)
+            console.log(`4: ${account.staff_id}`)
+        } else {
+            console.log("Không tìm thấy tài khoản.")
+        }
+        
+        const typeDisplay = {
+            ot: "Tăng ca",
+            compensate: "Bù",
+            main: "Ca chính"
+        }[action.split("_")[2]] || "Không xác định";
+
+        console.log("Type Display: ", typeDisplay);
+
+        bot.sendMessage(
+            chatId,
+            `<b>${userName} - #dev</b>\n${typeDisplay} - ${new Date().toLocaleDateString('vi-VN')}\n- Check: ${session}\n- Thời gian làm việc: ${action.split("_")[3]} tiếng\n- Hình thức: Làm việc tại văn phòng\n\n<b>Chúc bạn làm việc vui vẻ nhé ☀️</b>`,
+            { parse_mode: "HTML" }
+        )
+    }
+
     else if (action === 'checkinRemote') {
 
         console.log("0: ", chatId);

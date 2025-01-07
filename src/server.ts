@@ -29,7 +29,7 @@ const routes: Route[] = [
                 res.end("Thiếu tham số cần thiết.")
                 return
             }
-            if (action === "checkin") {
+            if (action.split("_")[0] === "checkin") {
                 handleCheckinRequest(chatId as number, userName as string, action as string, res)
             } else if (action === "checkout") {
                 handleCheckoutRequest(chatId as string, userName as string, action as string, res)
