@@ -11,6 +11,8 @@ export const handleAdminResponse = async (bot: TelegramBot) => {
         try {
             const data = callbackQuery.data;
 
+            console.log("Data:", data);
+
             if (!data) {
                 await bot.answerCallbackQuery(callbackQuery.id, { text: "Dữ liệu callback không hợp lệ." });
                 return;
@@ -21,12 +23,16 @@ export const handleAdminResponse = async (bot: TelegramBot) => {
             const [action, type, userChatId, detail] = data.split('_');
 
             // Kiểm tra dữ liệu callback hợp lệ
-            if (!action || !userChatId || !detail) {
+            if (!action || !type || !userChatId || !detail) {
                 await bot.answerCallbackQuery(callbackQuery.id, { text: "Dữ liệu callback không hợp lệ." });
                 return;
             }
 
             const userId = parseInt(userChatId);
+
+            if (action == "checkin" && type == "main") {
+                await handleCheckinMain(bot, userId, callbackQuery);
+            }
             
             if (type == "off") {
                 await handleOffResponse(bot, action, userId, detail, callbackQuery);

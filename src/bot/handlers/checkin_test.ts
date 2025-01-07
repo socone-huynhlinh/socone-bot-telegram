@@ -31,19 +31,19 @@ export const handleCheckin = async (bot: TelegramBot, msg: TelegramBot.Message) 
     }
 
     const checkinUrl = `http://192.168.1.45:3000/check-device?chatId=${chatId}&userName=${encodeURIComponent(userName)}&action=checkin`
-    bot.sendMessage(chatId, "Hãy nhấp vào nút bên dưới để thực hiện Check-in của bạn:", {
+    bot.sendMessage(chatId, "Hãy chọn loại ca làm việc của bạn", {
         reply_markup: {
             inline_keyboard: [
                 [
-                    {
-                        text: "Thực hiện Check-in ✅",
-                        url: checkinUrl,
-                    },
+                    { text: "Ca chính" , callback_data: 'checkin_main_${chatId}'},
+                    { text: "Ca đặc biệt" , callback_data: 'checkin_special_${chatId}'},
                 ],
             ],
         },
     })
 }
+
+
 
 export const handleCheckout = (bot: TelegramBot, msg: TelegramBot.Message) => {
     const chatId = msg.chat.id

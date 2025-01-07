@@ -1,5 +1,5 @@
 import TelegramBot from "node-telegram-bot-api"
-import { handleCheckin } from "./handlers/checkin"
+import { handleCheckin } from "./handlers/checkin_test"
 import { handleCheckinRemote, handleCheckoutRemote } from "./handlers/checkinRemote"
 import { handleCheckout } from "./handlers/checkin"
 import { handleGetListStaffs } from "./handlers/list-company-staffs"
