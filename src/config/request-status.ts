@@ -1,0 +1,1 @@
+export const requestStatus = new Map<string, boolean>();

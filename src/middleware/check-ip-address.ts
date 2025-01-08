@@ -1,10 +1,8 @@
+// src/middleware/validateMacMiddleware.ts
 import http from "http"
 import { getAllMacAddress } from "../services/common/device-infor"
-import * as arp from "node-arp"
-import util from "util"
 
-const getMACAsync = util.promisify(arp.getMAC)
-
+const arp = require("node-arp")
 export const validateMacMiddleware = async (req: http.IncomingMessage, res: http.ServerResponse, next: () => void) => {
     let userIp = (req.headers["x-forwarded-for"] as string) || req.socket.remoteAddress || ""
 
@@ -16,32 +14,30 @@ export const validateMacMiddleware = async (req: http.IncomingMessage, res: http
     console.log(`Địa chỉ IP của thiết bị: ${userIp}`)
 
     try {
-        const validMacs = (await getAllMacAddress()).map((mac) => (mac.mac_address || "").toLowerCase())
+        const validMacs = await getAllMacAddress()
 
         console.log("Danh sách địa chỉ MAC hợp lệ:", validMacs)
+        console.log(`Danh sách hợp lệ: ${validMacs.map(v => v.mac_address).join(", ")}`)
+        const listValidMacs = validMacs.map(v => v.mac_address).join(", ")
 
-        // Lấy địa chỉ MAC tương ứng
-        const mac = await getMACAsync(userIp)
+        arp.getMAC(userIp, (err: any, mac: string) => {
+            if (err) {
+                console.error(`Không thể lấy địa chỉ MAC cho IP ${userIp}:`, err)
+                res.statusCode = 500
+                res.end("Không thể xác thực thiết bị.")
+                return
+            }
 
-        if (!mac || typeof mac !== "string") {
-            console.error(`Địa chỉ MAC không hợp lệ hoặc không lấy được: ${mac}`)
-            res.statusCode = 500
-            res.end("Không thể xác thực thiết bị.")
-            return
-        }
-
-        console.log(`Địa chỉ MAC của IP ${userIp}: ${mac}`)
-
-        // Kiểm tra tính hợp lệ của địa chỉ MAC
-        if (!validMacs.includes(mac.toLowerCase())) {
-            console.log("Địa chỉ MAC không hợp lệ!")
-            res.statusCode = 403
-            res.end("Thiết bị không được phép truy cập.")
-            return
-        }
-
-        console.log("Địa chỉ MAC hợp lệ!")
-        next()
+            console.log(`Địa chỉ MAC của IP ${userIp}: ${mac}`)
+            if (!listValidMacs.includes(mac.toLowerCase())) {
+                console.log("Địa chỉ MAC không hợp lệ!")
+                res.statusCode = 403
+                res.end("Thiết bị không được phép truy cập.")
+                return
+            }
+            console.log("Địa chỉ MAC hợp lệ!")
+            next()
+        })
     } catch (err) {
         console.error("Error validating MAC address:", err)
         res.statusCode = 500
