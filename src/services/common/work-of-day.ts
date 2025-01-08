@@ -1,6 +1,6 @@
 import pool from "../../config/database"
 
-export const saveOffRequest = async (
+export const insertOffRequest = async (
     staffId: string,
     startTime: string,
     durationHour: number | null,

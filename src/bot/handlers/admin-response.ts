@@ -6,7 +6,7 @@ import { registerStatus } from "../../config/register-status";
 import { Staff } from '../../models/user';
 import { addStaff } from "../../services/admin/staff-manage";
 import { handleCheckinMain, handleCheckinSpecial, handleSpecialDuration, handleSpecialTimeSelection } from "./checkin_test";
-import { handleOffHourlySelection } from "./request-off-test";
+import { handleOffHourlySelection, handleOffAdmin } from "./request-off-test";
 
 export const handleAdminResponse = async (bot: TelegramBot) => {
     bot.on("callback_query", async (callbackQuery) => {
@@ -22,7 +22,7 @@ export const handleAdminResponse = async (bot: TelegramBot) => {
 
             console.log("Callback nhận được:", callbackQuery);
 
-            const [action, type, userChatId, detail] = data.split('_');
+            const [action, type, userChatId, detail, subdetail] = data.split('_');
 
             // Kiểm tra dữ liệu callback hợp lệ
             // if (!action || !type || !userChatId || !detail) {
@@ -32,6 +32,7 @@ export const handleAdminResponse = async (bot: TelegramBot) => {
 
             console.log("Action:", action);
             console.log("Type:", type);
+            console.log("Detail:", detail);
 
             const userId = parseInt(userChatId);
 
@@ -48,9 +49,13 @@ export const handleAdminResponse = async (bot: TelegramBot) => {
             else if (action === "off") {
                 if (type === "hourly") {
                     await handleOffHourlySelection(bot, userId, detail, callbackQuery);
-                } else {
-                    await handleOffResponse(bot, action, userId, detail, callbackQuery);
+                } 
+                else if (type === "approve" || type === "reject") {
+                    await handleOffAdmin(bot, type, userId, detail, callbackQuery);
                 }
+                else {
+                    await handleOffResponse(bot, userId, detail, subdetail, callbackQuery);
+                } 
 
             } else if (type == "register") {
                 console.log("Register response");
@@ -67,7 +72,7 @@ export const handleAdminResponse = async (bot: TelegramBot) => {
     });
 }
 
-const handleOffResponse = async (bot: TelegramBot, action: string, userId: number, offDate: string, callbackQuery: TelegramBot.CallbackQuery) => {
+const handleOffResponse = async (bot: TelegramBot, userId: number, offDate: string, subdetail: string, callbackQuery: TelegramBot.CallbackQuery) => {
     if (!callbackQuery.data) {
         await bot.answerCallbackQuery(callbackQuery.id, { text: "Yêu cầu không hợp lệ." });
         return;
@@ -82,8 +87,8 @@ const handleOffResponse = async (bot: TelegramBot, action: string, userId: numbe
             reply_markup: {
                 inline_keyboard: [
                     [
-                        { text: "Phê duyệt ✅", callback_data: `approve_off_${userId}_${offDate}` },
-                        { text: "Từ chối ❌", callback_data: `reject_off_${userId}_${offDate}` }
+                        { text: "Phê duyệt ✅", callback_data: `off_approve_${userId}_${offDate}` },
+                        { text: "Từ chối ❌", callback_data: `off_reject_${userId}_${offDate}` }
                     ]
                 ]
             }

@@ -30,7 +30,7 @@ const routes: Route[] = [
                 return
             }
             if (action.split("_")[0] === "checkin") {
-                handleCheckinRequest(chatId as number, userName as string, action as string, res)
+                handleCheckinRequest(parseInt(chatId as string), userName as string, action as string, res)
             } else if (action === "checkout") {
                 handleCheckoutRequest(chatId as string, userName as string, action as string, res)
             } else {
@@ -51,7 +51,7 @@ const routes: Route[] = [
                 return
             }
             if (action === "checkinRemote") {
-                handleCheckinRequest(chatId as number, userName as string, action as string, res)
+                handleCheckinRequest(parseInt(chatId as string), userName as string, action as string, res)
             } else if (action === "checkoutRemote") {
                 handleCheckoutRequest(chatId as string, userName as string, action as string, res)
             } else {

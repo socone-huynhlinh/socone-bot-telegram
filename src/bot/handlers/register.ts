@@ -1,6 +1,6 @@
 import TelegramBot from "node-telegram-bot-api"
 import { addStaff } from "../../services/admin/staff-manage"
-import { Staff } from "../../models/user"
+import { Staff } from "../../models/user";
 import { registerStatus } from "../../config/register-status"
 
 const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
