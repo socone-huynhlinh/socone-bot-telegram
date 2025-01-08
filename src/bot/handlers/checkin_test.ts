@@ -30,7 +30,6 @@ export const handleCheckin = async (bot: TelegramBot, msg: TelegramBot.Message) 
         }
     }
 
-    // const checkinUrl = `http://192.168.1.45:3000/check-device?chatId=${chatId}&userName=${encodeURIComponent(userName)}&action=checkin`
     bot.sendMessage(chatId, "<b>Hãy chọn loại ca làm việc của bạn</b>", {
         reply_markup: {
             inline_keyboard: [

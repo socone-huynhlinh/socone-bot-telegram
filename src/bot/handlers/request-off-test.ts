@@ -2,7 +2,7 @@ import TelegramBot from "node-telegram-bot-api";
 import { getAccountById } from "../../services/staff/get-telegram-account";
 import { TelegramAccount } from "../../models/user";
 import { requestStatus } from "../../config/request-status"; 
-import { saveOffRequest } from "../../services/common/work-of-day";
+import { insertOffRequest } from "../../services/common/work-of-day";
 
 // Hàm kiểm tra ngày hợp lệ
 const isValidDate = (dateStr: string): boolean => {
@@ -75,7 +75,7 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
 
         console.log(account.staff_id);
 
-        const requestId = await saveOffRequest(
+        const requestId = await insertOffRequest(
             account.staff_id,
             offDate,
             null,
@@ -113,4 +113,51 @@ export const handleOffHourlySelection = async (
     );
 
     await bot.answerCallbackQuery(callbackQuery.id, { text: "Vui lòng chọn số giờ nghỉ." });
+};
+
+export const handleOffAdmin = async (
+    bot : TelegramBot,
+    type: string,
+    userId: number,
+    detail: string,
+    callbackQuery: TelegramBot.CallbackQuery
+) => {
+    // Kiểm tra xem status yêu cầu có tồn tại không
+     
+    console.log("data: ", callbackQuery.data);
+
+    const [offDate, hours] = detail.split("_");
+
+    await bot.editMessageReplyMarkup(
+        {
+            inline_keyboard: [
+                [
+                    { text: 'Phê duyệt ✅ (Đã xử lý)', callback_data: 'disabled' },
+                    { text: 'Từ chối ❌ (Đã xử lý)', callback_data: 'disabled' }
+                ]
+            ]
+        },
+        {
+            chat_id: callbackQuery.message?.chat.id,
+            message_id: callbackQuery.message?.message_id
+        }
+    ).catch((err) => console.error('Lỗi khi chỉnh sửa nút:', err.message));
+
+    if (type === "approve") {
+        // const requestId = await insertOffRequest(
+        //     account.staff_id,
+        //     offDate,
+        //     null,
+        //     "pending",
+        //     offReason,
+        // );
+
+        await bot.sendMessage(userId, `✅ Yêu cầu off ngày ${offDate} của bạn đã được Admin phê duyệt. 🎉`);
+        await bot.sendMessage(-4620420034, `✅ Bạn đã phê duyệt yêu cầu off ngày ${offDate}.`);
+    } else {
+        await bot.sendMessage(userId, `❌ Yêu cầu off ngày ${offDate} của bạn đã bị Admin từ chối. ❌`);
+        await bot.sendMessage(-4620420034, `❌ Bạn đã từ chối yêu cầu off ngày ${offDate}.`);
+    }
+
+    await bot.answerCallbackQuery(callbackQuery.id, { text: "Đã xử lý yêu cầu." });
 };
