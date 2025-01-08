@@ -74,15 +74,6 @@ export const handleRegister = async (bot: TelegramBot, msg: TelegramBot.Message,
                 return;
             }
 
-            // const staff: Staff = {
-            //     id: "",
-            //     full_name: fullName,
-            //     role_name: roleName,
-            //     phone_number: phoneNumber,
-            //     company_mail: companyMail,
-            // };
-
-            // pendingRegistrations.set(requestKey, staff);
             registerStatus.set(requestKey, false); // False = chưa xử lý
 
             // Gửi yêu cầu tới admin

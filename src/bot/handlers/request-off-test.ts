@@ -2,6 +2,7 @@ import TelegramBot from "node-telegram-bot-api";
 import { getAccountById } from "../../services/staff/get-telegram-account";
 import { TelegramAccount } from "../../models/user";
 import { requestStatus } from "../../config/request-status"; 
+import { saveOffRequest } from "../../services/common/work-of-day";
 
 // Hàm kiểm tra ngày hợp lệ
 const isValidDate = (dateStr: string): boolean => {
@@ -15,8 +16,8 @@ const isValidDate = (dateStr: string): boolean => {
 
 // Hàm xử lý yêu cầu nghỉ phép
 export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Message, onFinish: () => void) => {
-    const chatId = msg.chat.id; 
-    const userName = `${msg.from?.first_name || ""} ${msg.from?.last_name || ""}`.trim(); 
+    const chatId = msg.chat.id;
+    const userName = `${msg.from?.first_name || ""} ${msg.from?.last_name || ""}`.trim();
 
     console.log(`Yêu cầu Off từ: ${userName}`);
 
@@ -53,39 +54,63 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
             return;
         }
 
-        // bot.sendMessage(
-        //     chatId,
-        //     "Kết quả sẽ được Admin xác nhận, cảm ơn bạn đã thông báo!"
-        // );
-
-        bot.sendMessage(
-            -4620420034, 
-            `Yêu cầu off từ: ${userName}\nThời gian: ${offDate}\nLý do: ${offReason}`,
+        await bot.sendMessage(
+            chatId,
+            "Vui lòng chọn thời gian nghỉ của bạn",
             {
                 reply_markup: {
                     inline_keyboard: [
                         [
-                            { text: "Phê duyệt ✅", callback_data: `approve_off_${chatId}_${offDate}` },
-                            { text: "Từ chối ❌", callback_data: `reject_off_${chatId}_${offDate}` }
-                        ]
-                    ]
-                }
+                            { text: "Cả ngày", callback_data: `off_full_${chatId}_${offDate}_8` },
+                            { text: "Buổi sáng", callback_data: `off_morning_${chatId}_${offDate}_4` },
+                            { text: "Buổi chiều", callback_data: `off_afternoon_${chatId}_${offDate}_4` },
+                        ],
+                        [
+                            { text: "Theo giờ", callback_data: `off_hourly_${chatId}_${offDate}` },
+                        ],
+                    ],
+                },
             }
         );
 
-        // // Đánh dấu yêu cầu chưa được xử lý
-        // const requestKey = `${chatId}_${offDate}`;
-        // requestStatus.set(requestKey, false); // False = chưa xử lý
+        console.log(account.staff_id);
 
-        const requestKey = `${chatId}_${offDate}`;
-        if (requestStatus.has(requestKey)) {
-            bot.sendMessage(chatId, "Yêu cầu này đã được gửi và đang chờ xử lý.");
-            onFinish();
-            return;
-        }
+        const requestId = await saveOffRequest(
+            account.staff_id,
+            offDate,
+            null,
+            "pending",
+            offReason,
+        );
 
-        requestStatus.set(requestKey, false); // False = chưa xử lý
-        bot.sendMessage(chatId, "Kết quả sẽ được Admin xác nhận, cảm ơn bạn đã thông báo!");
+        bot.sendMessage(chatId, "Yêu cầu của bạn đã được lưu và chờ xử lý.");
+        console.log(`Yêu cầu nghỉ phép đã lưu vào DB với ID: ${requestId}`);
+
         onFinish();
     });
+};
+
+export const handleOffHourlySelection = async (
+    bot: TelegramBot,
+    userId: number,
+    offDate: string,
+    callbackQuery: TelegramBot.CallbackQuery
+) => {
+    await bot.sendMessage(
+        userId,
+        "Vui lòng chọn số giờ nghỉ của bạn",
+        {
+            reply_markup: {
+                inline_keyboard: [
+                    [
+                        { text: "1 giờ", callback_data: `off_hours_${userId}_${offDate}_1` },
+                        { text: "2 giờ", callback_data: `off_hours_${userId}_${offDate}_2` },
+                        { text: "3 giờ", callback_data: `off_hours_${userId}_${offDate}_3` },
+                    ],
+                ],
+            },
+        }
+    );
+
+    await bot.answerCallbackQuery(callbackQuery.id, { text: "Vui lòng chọn số giờ nghỉ." });
 };
