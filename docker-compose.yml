@@ -1,0 +1,36 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:17
+    container_name: tele_postgres_container
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123456
+      POSTGRES_DB: socone_telegram_bot
+    volumes:
+      - ./db/socone_schemas_bot.dump:/docker-entrypoint-initdb.d/socone_schemas_bot.dump
+      - ./db/init.sh:/docker-entrypoint-initdb.d/init.sh
+      - pg_data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    restart: always
+
+  node-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tele_server_container
+    environment:
+      DB_HOST: postgres
+      DB_USER: postgres
+      DB_PASSWORD: 123456
+      DB_DATABASE: socone_telegram_bot
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+    restart: always
+
+volumes:
+  pg_data:

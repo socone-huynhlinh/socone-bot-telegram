@@ -79,3 +79,14 @@ socon-bot-telegram/
 - **.env**: Environment variables configuration.
 - **.prettierrc**: Prettier configuration.
 - **tsconfig.json**: TypeScript configuration.
+
+## Run container
+
+## Start container
+```bash
+docker-compose up -d
+```
+### Remove container
+```bash
+docker-compose down -v
+```
