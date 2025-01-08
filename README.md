@@ -82,9 +82,9 @@ socon-bot-telegram/
 
 ## Run container
 
-## Start container
+## Build and start container
 ```bash
-docker-compose up -d
+docker-compose up -d --build
 ```
 ### Remove container
 ```bash
