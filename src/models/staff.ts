@@ -10,8 +10,8 @@ type Staff = {
     department?:Department
     type_report?:TypeReport
     tele_account?:TelegramAccount
-    created_at: Date
-    updated_at: Date
+    created_at?: Date
+    updated_at?: Date
 
 }
 export default Staff

@@ -1,7 +1,7 @@
 import TelegramBot from "node-telegram-bot-api"
-import { isValidCheckin } from "../../services/staff/valid-checkin"
-import { getAccountById } from "../../services/staff/get-telegram-account"
-import { TelegramAccount } from "../../models/user"
+import { isValidCheckin } from "../../../services/staff/valid-checkin"
+import { getAccountById } from "../../../services/staff/get-telegram-account"
+import TelegramAccount from "../../../models/telegram-account"
 
 // src/handlers/checkin.ts
 
@@ -19,7 +19,7 @@ export const handleCheckinRemote = async (bot: TelegramBot, msg: TelegramBot.Mes
     
     // Kiểm tra xem người dùng đã Check-in chưa
     if (account) {
-        const isCheckin = await isValidCheckin(account.staff_id)
+        const isCheckin = await isValidCheckin(account.id)
         if (isCheckin) {
             console.log('Người dùng đã Check-in')
             bot.sendMessage(chatId, "Bạn đã Check-in rồi, không thể Check-in lại.")

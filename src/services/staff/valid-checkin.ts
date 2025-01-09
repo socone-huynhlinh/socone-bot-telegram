@@ -1,8 +1,9 @@
+import dbConnection from "../../config/database"
 import pool from "../../config/database"
 
 // Hàm kiểm tra trạng thái checkin của nhân viên
 export const isValidCheckin = async (staffId: string): Promise<boolean | null> => {
-    const client = await pool.connect() 
+    const client = await dbConnection.getPool().connect() // Kết nối tới database
     try {
         // Truy vấn kiểm tra trạng thái is_checkin của nhân viên
         const query = `
@@ -31,7 +32,7 @@ export const isValidCheckin = async (staffId: string): Promise<boolean | null> =
 
 // Hàm ghi trạng thái checkin của nhân viên
 export const writeCheckin = async (staffId: string, isCheckin: boolean, lateTime: string, workMode: string): Promise<void> => {
-    const client = await pool.connect() 
+    const client = await dbConnection.getPool().connect() // Kết nối tới database
     try {
         // Thực hiện ghi trạng thái checkin của nhân viên
         const updateQuery = `

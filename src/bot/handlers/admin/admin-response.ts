@@ -1,13 +1,12 @@
 import TelegramBot from "node-telegram-bot-api";
-import { requestStatus } from "../../config/request-status"; 
-import { registerStatus } from "../../config/register-status";
+import { requestStatus } from "../../../config/request-status"; 
+import { registerStatus } from "../../../config/register-status";
+import { handleCheckinMain, handleCheckinSpecial, handleSpecialDuration, handleSpecialTimeSelection } from "../checkin/checkin_test";
+import { handleOffAdmin, handleOffResponse, handleOffStartTime, handleSelectedStartTime, } from "../requests/request-off-test";
+import { addStaff } from "../../../services/admin/staff-manage";
+import Staff from "../../../models/staff";
 // import { handleRegister } from './register';
 // import { register } from "module";
-import { Staff } from '../../models/user';
-import { addStaff } from "../../services/admin/staff-manage";
-import { handleCheckinMain, handleCheckinSpecial, handleSpecialDuration, handleSpecialTimeSelection } from "./checkin_test";
-import { handleOffStartTime, handleOffAdmin, handleOffResponse, handleSelectedStartTime } from "./request-off-test";
-import { userState } from "../../config/user-state"
 
 export const handleAdminResponse = async (bot: TelegramBot) => {
     bot.on("callback_query", async (callbackQuery) => {
@@ -153,10 +152,9 @@ const handleRegisterResponse = async (bot: TelegramBot, action: string, userId: 
 
         const staff: Staff = {
             id: "",
-            full_name: "Test1",
-            role_name: "developer",
-            phone_number: "1231231231",
-            company_mail: email,
+            company_email: email,
+            full_name: "",
+            position: "",
         };
 
         console.log("Staff:", staff);

@@ -1,11 +1,11 @@
 // src/handlers/deviceHandlers.ts
 
 import http from "http"
-import bot from "../telegram-bot"
-import { sessionDay } from "../../services/common/session-day"
-import { writeCheckin } from "../../services/staff/valid-checkin"
-import { getAccountById } from "../../services/staff/get-telegram-account"
-import { TelegramAccount } from "../../models/user"
+import bot from "../../telegram-bot"
+import { sessionDay } from "../../../services/common/session-day"
+import { writeCheckin } from "../../../services/staff/valid-checkin"
+import { getAccountById } from "../../../services/staff/get-telegram-account"
+import TelegramAccount from "../../../models/telegram-account"
 
 export const handleCheckinRequest = async (chatId: number, userName: string, action: string, res: http.ServerResponse) => {
     // Xử lý logic Check-in ở đây
@@ -24,11 +24,7 @@ export const handleCheckinRequest = async (chatId: number, userName: string, act
 
         const account: TelegramAccount | null = await getAccountById(chatId)
         if (account) {
-            console.log(`1: ${account.id}`)
-            console.log(`2: ${account.first_name}`)
-            console.log(`3: ${account.last_name}`)
-            console.log(`4: ${account.staff_id}`)
-            await writeCheckin(account.staff_id, true, lateFormatted, 'office');
+            await writeCheckin(account.id, true, lateFormatted, 'office');
         } else {
             console.log("Không tìm thấy tài khoản.")
         }
@@ -53,10 +49,6 @@ export const handleCheckinRequest = async (chatId: number, userName: string, act
 
         const account: TelegramAccount | null = await getAccountById(chatId)
         if (account) {
-            console.log(`1: ${account.id}`)
-            console.log(`2: ${account.first_name}`)
-            console.log(`3: ${account.last_name}`)
-            console.log(`4: ${account.staff_id}`)
         } else {
             console.log("Không tìm thấy tài khoản.")
         }
@@ -83,10 +75,7 @@ export const handleCheckinRequest = async (chatId: number, userName: string, act
         const account: TelegramAccount | null = await getAccountById(chatId)
         if (account) {
             console.log(`1: ${account.id}`)
-            console.log(`2: ${account.first_name}`)
-            console.log(`3: ${account.last_name}`)
-            console.log(`4: ${account.staff_id}`)
-            await writeCheckin(account.staff_id, true, lateFormatted, 'remote');
+            await writeCheckin(account.id, true, lateFormatted, 'remote');
         } else {
             console.log("Không tìm thấy tài khoản.")
         }

@@ -1,8 +1,8 @@
-import pool from "../../config/database"
-import { TelegramAccount } from "../../models/user"
+import dbConnection from "../../config/database"
+import TelegramAccount from "../../models/telegram-account"
 
 export const getAccountById = async (chatId: number): Promise<TelegramAccount | null> => {
-    const client = await pool.connect()
+    const client = await dbConnection.getPool().connect() // Kết nối tới database
     try {
         const query = `
             SELECT *
@@ -18,13 +18,7 @@ export const getAccountById = async (chatId: number): Promise<TelegramAccount | 
         const row = res.rows[0]
         console.log(row)
 
-        const telegramAccount = new TelegramAccount(
-            row.id,
-            row.first_name,
-            row.last_name,
-            row.staff_id,
-        )
-        return telegramAccount
+        return null
     } catch (err) {
         console.error("Lỗi khi truy vấn thông tin nhân viên:", err)
         throw err

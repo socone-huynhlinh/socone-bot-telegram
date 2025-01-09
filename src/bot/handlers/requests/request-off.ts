@@ -1,7 +1,7 @@
 import TelegramBot from "node-telegram-bot-api";
-import { getAccountById } from "../../services/staff/get-telegram-account";
-import { TelegramAccount } from "../../models/user";
-import { requestStatus } from "../../config/request-status"; 
+import { getAccountById } from "../../../services/staff/get-telegram-account";
+import { requestStatus } from "../../../config/request-status"; 
+import TelegramAccount from "../../../models/telegram-account";
 
 // Hàm kiểm tra ngày hợp lệ
 const isValidDate = (dateStr: string): boolean => {

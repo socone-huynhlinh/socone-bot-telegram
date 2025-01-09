@@ -1,7 +1,7 @@
-import pool from "../../config/database"
+import dbConnection from "../../config/database"
 
 export const getAllMacAddress = async () => {
-    const client = await pool.connect()
+    const client = await dbConnection.getPool().connect() // Kết
     try {
         const res = await client.query("SELECT * FROM devices")
         return res.rows

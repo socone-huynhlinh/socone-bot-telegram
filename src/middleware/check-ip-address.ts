@@ -17,8 +17,8 @@ export const validateMacMiddleware = async (req: http.IncomingMessage, res: http
         const validMacs = await getAllMacAddress()
 
         console.log("Danh sách địa chỉ MAC hợp lệ:", validMacs)
-        console.log(`Danh sách hợp lệ: ${validMacs.map(v => v.mac_address).join(", ")}`)
-        const listValidMacs = validMacs.map(v => v.mac_address).join(", ")
+        console.log(`Danh sách hợp lệ: ${validMacs.map((v: { mac_address: any }) => v.mac_address).join(", ")}`)
+        const listValidMacs = validMacs.map((v: { mac_address: any }) => v.mac_address).join(", ")
 
         arp.getMAC(userIp, (err: any, mac: string) => {
             if (err) {

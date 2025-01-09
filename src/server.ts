@@ -6,8 +6,9 @@ dotenv.config()
 import http from "http"
 import url from "url"
 import "./bot/telegram-bot" // Đảm bảo bot được khởi động khi server chạy
-import { handleCheckinRequest, handleCheckoutRequest } from "./bot/handlers/device-handlers"
+import { handleCheckinRequest, handleCheckoutRequest } from "./bot/handlers/devices/device-handlers"
 import { validateMacMiddleware } from "./middleware/check-ip-address"
+import getLocalIp from "./utils/get-ip-address"
 const PORT = process.env.PORT || 3000
 
 // Định nghĩa các route và middleware tương ứng
@@ -91,7 +92,8 @@ const server = http.createServer((req, res) => {
         res.end("Not Found")
     }
 })
+const serverIp = getLocalIp();
 
 server.listen(PORT, () => {
-    console.log(`Server đang chạy trên cổng ${PORT}...`)
+    console.log(`Server đang chạy trên cổng ${PORT} and ip : ${serverIp} ...`)
 })
