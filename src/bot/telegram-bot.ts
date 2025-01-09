@@ -6,6 +6,7 @@ import { handleGetListStaffs } from "./handlers/list-company-staffs"
 import { handleRequestOff } from "./handlers/request-off-test"
 import { handleAdminResponse } from "./handlers/admin-response"
 import { handleRegister } from "./handlers/register_test"
+import { userState } from "../config/user-state"
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
 
@@ -14,8 +15,6 @@ if (!TELEGRAM_BOT_TOKEN) {
 }
 
 const bot = new TelegramBot(TELEGRAM_BOT_TOKEN, { polling: true })
-
-const userState = new Map<number, string>(); // Map để lưu trạng thái người dùng
 
 bot.on("message", (msg) => {
     const chatId = msg.chat.id
@@ -63,13 +62,14 @@ bot.on("message", (msg) => {
                 handleRegister(bot, msg, () => userState.delete(chatId)); // Xóa trạng thái sau khi xử lý xong
                 break
 
-            default:
-                bot.sendMessage(chatId, "Lệnh không hợp lệ. Vui lòng thử lại.")
-                break
+            // default:
+            //     bot.sendMessage(chatId, "Lệnh không hợp lệ. Vui lòng thử lại.")
+            //     break
         }
-    } else {
-        bot.sendMessage(chatId, "Bạn vừa gửi tin nhắn không phải là lệnh.");
-    }
+    } 
+    // else {
+    //     bot.sendMessage(chatId, "Bạn vừa gửi tin nhắn không phải là lệnh.");
+    // }
 });
 
 handleAdminResponse(bot);

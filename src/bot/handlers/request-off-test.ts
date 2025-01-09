@@ -2,7 +2,8 @@ import TelegramBot from "node-telegram-bot-api";
 import { getAccountById } from "../../services/staff/get-telegram-account";
 import { TelegramAccount } from "../../models/user";
 import { requestStatus } from "../../config/request-status"; 
-import { insertOffRequest } from "../../services/common/work-of-day";
+import { getOffRequestById ,insertOffRequest, updateOffRequest } from "../../services/common/work-off-day-infor";
+import { off } from "process";
 
 // Hàm kiểm tra ngày hợp lệ
 const isValidDate = (dateStr: string): boolean => {
@@ -54,6 +55,14 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
             return;
         }
 
+        const idOffDay = await insertOffRequest(
+            account.staff_id,
+            offDate,
+            null, // Start time sẽ được chọn sau
+            "pending",
+            offReason,
+        );        
+
         await bot.sendMessage(
             chatId,
             "Vui lòng chọn thời gian nghỉ của bạn",
@@ -61,12 +70,12 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
                 reply_markup: {
                     inline_keyboard: [
                         [
-                            { text: "Cả ngày", callback_data: `off_full_${chatId}_${offDate}_8` },
-                            { text: "Buổi sáng", callback_data: `off_morning_${chatId}_${offDate}_4` },
-                            { text: "Buổi chiều", callback_data: `off_afternoon_${chatId}_${offDate}_4` },
+                            { text: "Cả ngày", callback_data: `off_full_${chatId}_${offDate}_8h00_8_${idOffDay}` },
+                            { text: "Buổi sáng", callback_data: `off_morning_${chatId}_${offDate}_8h00_4_${idOffDay}` },
+                            { text: "Buổi chiều", callback_data: `off_afternoon_${chatId}_${offDate}_13h30_4_${idOffDay}` },
                         ],
                         [
-                            { text: "Theo giờ", callback_data: `off_hourly_${chatId}_${offDate}` },
+                            { text: "Theo giờ", callback_data: `off_hourly_${chatId}_${offDate}_startTime_0_${idOffDay}` },
                         ],
                     ],
                 },
@@ -75,27 +84,62 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
 
         console.log(account.staff_id);
 
-        const requestId = await insertOffRequest(
-            account.staff_id,
-            offDate,
-            null,
-            "pending",
-            offReason,
-        );
-
         bot.sendMessage(chatId, "Yêu cầu của bạn đã được lưu và chờ xử lý.");
-        console.log(`Yêu cầu nghỉ phép đã lưu vào DB với ID: ${requestId}`);
+        // console.log(`Yêu cầu nghỉ phép đã lưu vào DB với ID: ${requestId}`);
 
         onFinish();
     });
 };
 
+export const handleOffStartTime = async (
+    bot: TelegramBot,
+    offReason: string,
+    callbackQuery: TelegramBot.CallbackQuery,
+) => {
+    const [userId, offDate] = callbackQuery.data?.split("_").slice(2, 4) || [];
+    console.log("Off Date 1: ", offDate);
+
+    await bot.answerCallbackQuery(callbackQuery.id, { text: "Đã nhận yêu cầu, vui lòng nhập thời gian nghỉ." });
+
+    await bot.sendMessage(
+        userId,
+        "Vui lòng nhập thời gian nghỉ của bạn, theo cú pháp sau:\n- Ví dụ: 8h00",
+    );
+
+    bot.once("message", async (response) => {
+        try {
+            if (!response.text) {
+                bot.sendMessage(userId, "Lỗi: Không tìm thấy nội dung tin nhắn. Vui lòng thử lại!");
+                return;
+            }
+    
+            const startTime = response.text.trim();
+    
+            const timeRegex = /^([0-9]|1[0-2])h[0-5][0-9]$/;
+            if (!timeRegex.test(startTime)) {
+                await bot.sendMessage(userId, "Thời gian không hợp lệ. Vui lòng nhập lại (ví dụ: 8h00 hoặc 9h30).");
+                return;
+            }
+    
+            await handleOffHourlySelection(bot, parseInt(userId), offDate, startTime, offReason, callbackQuery);
+        } catch (err) {
+            console.error("Lỗi khi xử lý thời gian nghỉ:", err);
+            await bot.sendMessage(userId, "Có lỗi xảy ra khi xử lý thời gian nghỉ của bạn.");
+            return;
+        }
+    });
+}
+
 export const handleOffHourlySelection = async (
     bot: TelegramBot,
     userId: number,
     offDate: string,
+    startTime: string,
+    offReason: string, 
     callbackQuery: TelegramBot.CallbackQuery
 ) => {
+    await bot.answerCallbackQuery(callbackQuery.id, { text: "Vui lòng chọn số giờ nghỉ." });
+
     await bot.sendMessage(
         userId,
         "Vui lòng chọn số giờ nghỉ của bạn",
@@ -103,16 +147,63 @@ export const handleOffHourlySelection = async (
             reply_markup: {
                 inline_keyboard: [
                     [
-                        { text: "1 giờ", callback_data: `off_hours_${userId}_${offDate}_1` },
-                        { text: "2 giờ", callback_data: `off_hours_${userId}_${offDate}_2` },
-                        { text: "3 giờ", callback_data: `off_hours_${userId}_${offDate}_3` },
+                        { text: "1 giờ", callback_data: `off_hours_${userId}_${offDate}_${startTime}_1_${offReason}` },
+                        { text: "2 giờ", callback_data: `off_hours_${userId}_${offDate}_${startTime}_2_${offReason}` },
+                        { text: "3 giờ", callback_data: `off_hours_${userId}_${offDate}_${startTime}_3_${offReason}` },
                     ],
                 ],
             },
         }
     );
+};
 
-    await bot.answerCallbackQuery(callbackQuery.id, { text: "Vui lòng chọn số giờ nghỉ." });
+export const handleOffResponse = async (bot: TelegramBot, userId: number, offDate: string, startTime: string, hourTime: string, idOffDay: string,callbackQuery: TelegramBot.CallbackQuery) => {
+    if (!callbackQuery.data) {
+        await bot.answerCallbackQuery(callbackQuery.id, { text: "Yêu cầu không hợp lệ." });
+        return;
+    }
+
+    // const account: TelegramAccount | null = await getAccountById(userId);
+
+    // if (!account) {
+    //     bot.sendMessage(userId, "Không tìm thấy tài khoản trong hệ thống.");
+    //     return;
+    // }
+
+    // console.log(account.staff_id);
+
+    // // Tạo 1 đối tượng mới để lấy thông tin work_off_day
+    // const workOffDay = await getOffRequestById(idOffDay);
+    // console.log("WorkOffDay status: ", workOffDay.status);
+    // console.log("WorkOffDay staff_id: ", workOffDay.staff_id);
+    // console.log("WorkOffDay start_time: ", workOffDay.start_time);
+    // console.log("WorkOffDay duration_hour: ", workOffDay.duration_hour);
+    // console.log("WorkOffDay description: ", workOffDay.description);
+
+    // const requestId = await insertOffRequest(
+    //     account.staff_id,
+    //     offDate,
+    //     null,
+    //     "pending",
+    //     offReason,
+    // );
+
+    console.log("Data cần nhập vô nè: ", callbackQuery.data);
+
+    await bot.sendMessage(
+        -4620420034, 
+        `Yêu cầu off từ: ${userId}\nThời gian: ${offDate}\n`,
+        {
+            reply_markup: {
+                inline_keyboard: [
+                    [
+                        { text: "Phê duyệt ✅", callback_data: `off_approve_${userId}_${offDate}_${startTime}_${hourTime}_${idOffDay}` },
+                        { text: "Từ chối ❌", callback_data: `off_reject_${userId}_${offDate}_${startTime}_${hourTime}_${idOffDay}` }
+                    ]
+                ]
+            }
+        }
+    );
 };
 
 export const handleOffAdmin = async (
@@ -120,11 +211,15 @@ export const handleOffAdmin = async (
     type: string,
     userId: number,
     detail: string,
+    subdetail1: string,
+    subdetail2: string,
+    subdetail3: string,
     callbackQuery: TelegramBot.CallbackQuery
 ) => {
     // Kiểm tra xem status yêu cầu có tồn tại không
      
-    console.log("data: ", callbackQuery.data);
+    console.log("Last callback: ", callbackQuery);
+    console.log("Cần truy vấn: ", callbackQuery.data);
 
     const [offDate, hours] = detail.split("_");
 
@@ -143,13 +238,37 @@ export const handleOffAdmin = async (
         }
     ).catch((err) => console.error('Lỗi khi chỉnh sửa nút:', err.message));
 
+    const account: TelegramAccount | null = await getAccountById(userId);
+
+    if (!account) {
+        bot.sendMessage(userId, "Không tìm thấy tài khoản trong hệ thống.");
+        return;
+    }
+
+    // off_approve_7986019982_09/01/2025_12h00_1
+    // action = off, type = approve, userId = 7986019982, detail = 09/01/2025, subdetail1 = 12h00, subdetail2 = 1
+    // Đã có action, userId, detail
+    // Cần thay đổi
+    // type = approved, rejected
+    // 
+
+    console.log(account.staff_id);
+
+    // Tạo 1 đối tượng mới để lấy thông tin work_off_day
+    const workOffDay = await getOffRequestById(subdetail3);
+    console.log("WorkOffDay id: ", workOffDay.id);
+    console.log("WorkOffDay staff_id: ", workOffDay.staff_id);
+    console.log("WorkOffDay status: ", workOffDay.status);
+    console.log("WorkOffDay start_time: ", workOffDay.start_time);
+    console.log("WorkOffDay duration_hour: ", workOffDay.duration_hour);
+    console.log("WorkOffDay description: ", workOffDay.description);
+
+
     if (type === "approve") {
-        // const requestId = await insertOffRequest(
+        // const requestId = await updateOffRequest(
         //     account.staff_id,
-        //     offDate,
         //     null,
-        //     "pending",
-        //     offReason,
+        //     "approved",
         // );
 
         await bot.sendMessage(userId, `✅ Yêu cầu off ngày ${offDate} của bạn đã được Admin phê duyệt. 🎉`);
