@@ -1,4 +1,4 @@
-type workOffDay = {
+type WorkOffDay = {
     id: string
     staff_id: string
     start_time?: string
@@ -8,4 +8,4 @@ type workOffDay = {
     updated_at?: Date
     description: Text
 }
-export default workOffDay
+export default WorkOffDay

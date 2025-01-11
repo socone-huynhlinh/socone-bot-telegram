@@ -1,5 +1,5 @@
 import pool from "../../config/database"
-import workOffDay from '../../models/work-off-day';
+import WorkOffDay from '../../models/work-off-day';
 
 export const getOffRequestById = async (id: string) => {
     const query = `
@@ -22,7 +22,7 @@ export const getOffRequestById = async (id: string) => {
         const result = await pool.query(query, values);
         const row = result.rows[0];
 
-        const workOffDay: workOffDay = {
+        const workOffDay: WorkOffDay = {
             id: row.id,
             staff_id: row.staff_id,
             start_time: row.start_time,
@@ -36,6 +36,24 @@ export const getOffRequestById = async (id: string) => {
 
     } catch (err) {
         console.error("Lỗi khi lấy thông tin yêu cầu nghỉ từ DB:", err);
+        throw err;
+    }
+}
+
+export const getOffReasonbyId = async (id: string) => {
+    const query = `
+            SELECT 
+            description
+        FROM work_off_days
+        WHERE id = $1;
+    `;
+
+    const values = [id];
+    try {
+        const result = await pool.query(query, values);
+        return result.rows[0].description;
+    } catch (err) {
+        console.error("Lỗi khi lấy lý do nghỉ từ DB:", err);
         throw err;
     }
 }
@@ -66,20 +84,31 @@ export const insertOffRequest = async (
 };
 
 export const updateOffRequest = async (
-    staffId: string, 
+    idOffDay: string, 
+    offDate: string,
+    startTime: string,
     durationHour: number | null,
     status: string
 ) => {
     const query = `
         UPDATE work_off_days 
-        SET status = $2, duration_hour = $3
+        SET 
+            start_time = TO_TIMESTAMP($2 || ' ' || $3, 'DD/MM/YYYY HH24:MI') AT TIME ZONE 'Asia/Ho_Chi_Minh',
+            duration_hour = $4,
+            status = $5,
+            updated_at = NOW()
         WHERE id = $1;
     `;
 
-    const values = [staffId, status, durationHour];
+    const values = [idOffDay, offDate, startTime, durationHour, status];
 
     try {
-        await pool.query(query, values);
+        const result = await pool.query(query, values);
+        if (result.rowCount === 0) {
+            throw new Error(`Không tìm thấy yêu cầu với id: ${idOffDay}`);
+        }
+
+        console.log(`Yêu cầu nghỉ phép với id ${idOffDay} đã được cập nhật.`);
     } catch (err) {
         console.error("Lỗi khi cập nhật trạng thái yêu cầu:", err);
         throw err;

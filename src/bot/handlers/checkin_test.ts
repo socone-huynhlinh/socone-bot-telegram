@@ -49,7 +49,7 @@ export const handleCheckinMain = async (bot: TelegramBot, chatId: number, callba
 
     console.log(`Yêu cầu Check-in ca chính từ: ${userName}`);
 
-    const checkinUrl = `http://192.168.1.45:3000/check-device?chatId=${chatId}&userName=${encodeURIComponent(userName)}&action=checkin_main`;
+    const checkinUrl = `http://192.168.1.27:3000/check-device?chatId=${chatId}&userName=${encodeURIComponent(userName)}&action=checkin_main`;
     await bot.sendMessage(chatId, "<b>Hãy nhấp vào nút bên dưới để thực hiện Check-in ca chính</b>", {
         reply_markup: {
             inline_keyboard: [
@@ -78,6 +78,38 @@ export const handleCheckinSpecial = async (bot: TelegramBot, chatId: number, cal
         parse_mode: "HTML",
     });
 };
+
+export const handleCheckinStartTime = async (bot: TelegramBot, chatId: number, callbackQuery: TelegramBot.CallbackQuery) => {
+    if (!callbackQuery.data) {
+        await bot.answerCallbackQuery(callbackQuery.id, { text: "Yêu cầu không hợp lệ." });
+        return;
+    }
+
+    const messageListener = async (response: TelegramBot.Message) => {
+        if (response.chat.id !== chatId) return;
+
+        try {
+            if (!response.text) {
+                await bot.sendMessage(chatId, "Lỗi: Không tìm thấy nội dung tin nhắn. Vui lòng thử lại!");
+                return;
+            }
+
+            const startTime = response.text.trim();
+
+            const timeRegex = /^([0-9]|1[0-9]):[0-5][0-9]$/;
+            if (!timeRegex.test(startTime)) {
+                await bot.sendMessage(chatId, "Thời gian không hợp lệ. Vui lòng nhập lại (ví dụ: 8:00 hoặc 13:30).");
+                return;
+            }
+
+            const [hour, minute] = startTime.split(":").map(Number);
+
+            
+        } catch (err) {
+            console.error("Lỗi khi xử lý tin nhắn từ người dùng:", err);
+        }
+    }
+}
 
 export const handleSpecialDuration = async (bot: TelegramBot, chatId: number, callbackQuery: TelegramBot.CallbackQuery) => {
     if (!callbackQuery.data) {
@@ -125,7 +157,7 @@ export const handleSpecialTimeSelection = async (bot: TelegramBot, chatId: numbe
 
     console.log(`Yêu cầu Check-in ca chính từ: ${userName}`);
 
-    const checkinUrl = `http://192.168.1.45:3000/check-device?chatId=${chatId}&userName=${encodeURIComponent(userName)}&action=checkin_special_${type}_${duration}`;
+    const checkinUrl = `http://192.168.1.27:3000/check-device?chatId=${chatId}&userName=${encodeURIComponent(userName)}&action=checkin_special_${type}_${duration}`;
     await bot.sendMessage(chatId, "Hãy nhấp vào nút bên dưới để thực hiện Check-in ca chính:", {
         reply_markup: {
             inline_keyboard: [

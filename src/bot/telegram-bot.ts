@@ -21,12 +21,10 @@ bot.on("message", (msg) => {
     const text = msg.text?.trim() || ""
 
     if (userState.get(chatId) === "registering") {
-        // Nếu đang xử lý đăng ký, bỏ qua xử lý message chung
         return;
     }
 
     if (userState.get(chatId) === "requestingOff") {
-        // Nếu đang xử lý yêu cầu nghỉ, bỏ qua xử lý message chung
         return;
     }
 
@@ -49,7 +47,7 @@ bot.on("message", (msg) => {
                 break
 
             case /^\/off$/.test(text):
-                userState.set(chatId, "requestingOff"); // Đặt trạng thái người dùng là "đang yêu cầu nghỉ"
+                userState.set(chatId, "requestingOff"); 
                 handleRequestOff(bot, msg, () => userState.delete(chatId)); // Xóa trạng thái sau khi xử lý xong
                 break
 
@@ -58,13 +56,18 @@ bot.on("message", (msg) => {
                 break
 
             case /^\/register$/.test(text):
-                userState.set(chatId, "registering"); // Đặt trạng thái người dùng là "đang đăng ký"
+                userState.set(chatId, "registering"); 
                 handleRegister(bot, msg, () => userState.delete(chatId)); // Xóa trạng thái sau khi xử lý xong
                 break
 
-            // default:
-            //     bot.sendMessage(chatId, "Lệnh không hợp lệ. Vui lòng thử lại.")
-            //     break
+            case /^\/cancel$/.test(text):
+                userState.delete(chatId)
+                bot.sendMessage(chatId, "Đã hủy lệnh.")
+                break
+
+            default:
+                bot.sendMessage(chatId, "Lệnh không hợp lệ. Vui lòng thử lại.")
+                break
         }
     } 
     // else {
