@@ -6,6 +6,8 @@ import { handleGetListStaffs } from "./handlers/list-company-staffs"
 import { handleRequestOff } from "./handlers/request-off-test"
 import { handleAdminResponse } from "./handlers/admin-response"
 import { handleRegister } from "./handlers/register_test"
+import { userState } from "../config/user-state"
+import { handleStart } from "./handlers/start"
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
 
@@ -15,24 +17,24 @@ if (!TELEGRAM_BOT_TOKEN) {
 
 const bot = new TelegramBot(TELEGRAM_BOT_TOKEN, { polling: true })
 
-const userState = new Map<number, string>(); // Map để lưu trạng thái người dùng
-
 bot.on("message", (msg) => {
     const chatId = msg.chat.id
     const text = msg.text?.trim() || ""
 
     if (userState.get(chatId) === "registering") {
-        // Nếu đang xử lý đăng ký, bỏ qua xử lý message chung
         return;
     }
 
     if (userState.get(chatId) === "requestingOff") {
-        // Nếu đang xử lý yêu cầu nghỉ, bỏ qua xử lý message chung
         return;
     }
 
     if (text.startsWith("/")) {
         switch (true) {
+            case /^\/start$/.test(text):
+                handleStart(bot, msg)
+                break
+
             case /^\/checkin$/.test(text):
                 handleCheckin(bot, msg)
                 break
@@ -50,8 +52,9 @@ bot.on("message", (msg) => {
                 break
 
             case /^\/off$/.test(text):
-                userState.set(chatId, "requestingOff"); // Đặt trạng thái người dùng là "đang yêu cầu nghỉ"
-                handleRequestOff(bot, msg, () => userState.delete(chatId)); // Xóa trạng thái sau khi xử lý xong
+                // userState.set(chatId, "requestingOff"); 
+                // handleRequestOff(bot, msg, () => userState.delete(chatId)); // Xóa trạng thái sau khi xử lý xong
+                handleRequestOff(bot, msg)
                 break
 
             case /^\/list-company-staffs$/.test(text):
@@ -59,7 +62,7 @@ bot.on("message", (msg) => {
                 break
 
             case /^\/register$/.test(text):
-                userState.set(chatId, "registering"); // Đặt trạng thái người dùng là "đang đăng ký"
+                // userState.set(chatId, "registering"); 
                 handleRegister(bot, msg, () => userState.delete(chatId)); // Xóa trạng thái sau khi xử lý xong
                 break
 
@@ -67,9 +70,10 @@ bot.on("message", (msg) => {
                 bot.sendMessage(chatId, "Lệnh không hợp lệ. Vui lòng thử lại.")
                 break
         }
-    } else {
-        bot.sendMessage(chatId, "Bạn vừa gửi tin nhắn không phải là lệnh.");
-    }
+    } 
+    // else {
+    //     bot.sendMessage(chatId, "Bạn vừa gửi tin nhắn không phải là lệnh.");
+    // }
 });
 
 handleAdminResponse(bot);

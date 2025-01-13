@@ -52,12 +52,7 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
             onFinish();
             return;
         }
-
-        // bot.sendMessage(
-        //     chatId,
-        //     "Kết quả sẽ được Admin xác nhận, cảm ơn bạn đã thông báo!"
-        // );
-
+        
         bot.sendMessage(
             -4620420034, 
             `Yêu cầu off từ: ${userName}\nThời gian: ${offDate}\nLý do: ${offReason}`,
@@ -72,10 +67,6 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
                 }
             }
         );
-
-        // // Đánh dấu yêu cầu chưa được xử lý
-        // const requestKey = `${chatId}_${offDate}`;
-        // requestStatus.set(requestKey, false); // False = chưa xử lý
 
         const requestKey = `${chatId}_${offDate}`;
         if (requestStatus.has(requestKey)) {

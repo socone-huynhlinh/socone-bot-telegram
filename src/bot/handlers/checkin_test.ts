@@ -49,7 +49,7 @@ export const handleCheckinMain = async (bot: TelegramBot, chatId: number, callba
 
     console.log(`Yêu cầu Check-in ca chính từ: ${userName}`);
 
-    const checkinUrl = `http://192.168.1.45:3000/check-device?chatId=${chatId}&userName=${encodeURIComponent(userName)}&action=checkin_main`;
+    const checkinUrl = `http://192.168.1.27:3000/check-device?chatId=${chatId}&userName=${encodeURIComponent(userName)}&action=checkin_main`;
     await bot.sendMessage(chatId, "<b>Hãy nhấp vào nút bên dưới để thực hiện Check-in ca chính</b>", {
         reply_markup: {
             inline_keyboard: [
@@ -79,7 +79,11 @@ export const handleCheckinSpecial = async (bot: TelegramBot, chatId: number, cal
     });
 };
 
-export const handleSpecialDuration = async (bot: TelegramBot, chatId: number, callbackQuery: TelegramBot.CallbackQuery) => {
+export const handleSpecialDuration = async (
+    bot: TelegramBot, 
+    chatId: number,  
+    callbackQuery: TelegramBot.CallbackQuery
+) => {
     if (!callbackQuery.data) {
         await bot.answerCallbackQuery(callbackQuery.id, { text: "Yêu cầu không hợp lệ." });
         return;
@@ -91,26 +95,29 @@ export const handleSpecialDuration = async (bot: TelegramBot, chatId: number, ca
 
     await bot.answerCallbackQuery(callbackQuery.id, { text: `Bạn đã chọn: ${type}` });
 
+    // Tạo các nút bằng vòng lặp
+    const inlineKeyboard: TelegramBot.InlineKeyboardButton[][] = [];
+    const maxHours = 8; // Số giờ tối đa
+
+    for (let i = 1; i <= maxHours; i += 4) {
+        const row: TelegramBot.InlineKeyboardButton[] = [];
+        for (let j = i; j < i + 4 && j <= maxHours; j++) {
+            row.push({
+                text: `${j}h`,
+                callback_data: `durationSpecial_${type}_${userId}_${j}`
+            });
+        }
+        inlineKeyboard.push(row);
+    }
+
     await bot.sendMessage(chatId, "<b>Vui lòng chọn số thời gian làm việc</b>", {
         reply_markup: {
-            inline_keyboard: [
-                [
-                    { text: "1h", callback_data: `durationSpecial_${type}_${userId}_1` },
-                    { text: "2h", callback_data: `durationSpecial_${type}_${userId}_2` },
-                    { text: "3h", callback_data: `durationSpecial_${type}_${userId}_3` },
-                    { text: "4h", callback_data: `durationSpecial_${type}_${userId}_4` },
-                ],
-                [
-                    { text: "5h", callback_data: `durationSpecial_${type}_${userId}_5` },
-                    { text: "6h", callback_data: `durationSpecial_${type}_${userId}_6` },
-                    { text: "7h", callback_data: `durationSpecial_${type}_${userId}_7` },
-                    { text: "8h", callback_data: `durationSpecial_${type}_${userId}_8` },
-                ]
-            ],
+            inline_keyboard: inlineKeyboard
         },
         parse_mode: "HTML",
     });
-}
+};
+
 
 export const handleSpecialTimeSelection = async (bot: TelegramBot, chatId: number, callbackQuery: TelegramBot.CallbackQuery) => {
 
@@ -124,7 +131,7 @@ export const handleSpecialTimeSelection = async (bot: TelegramBot, chatId: numbe
 
     console.log(`Yêu cầu Check-in ca chính từ: ${userName}`);
 
-    const checkinUrl = `http://192.168.1.45:3000/check-device?chatId=${chatId}&userName=${encodeURIComponent(userName)}&action=checkin_special_${type}_${duration}`;
+    const checkinUrl = `http://192.168.1.27:3000/check-device?chatId=${chatId}&userName=${encodeURIComponent(userName)}&action=checkin_special_${type}_${duration}`;
     await bot.sendMessage(chatId, "Hãy nhấp vào nút bên dưới để thực hiện Check-in ca chính:", {
         reply_markup: {
             inline_keyboard: [
