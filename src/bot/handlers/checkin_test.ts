@@ -79,39 +79,11 @@ export const handleCheckinSpecial = async (bot: TelegramBot, chatId: number, cal
     });
 };
 
-export const handleCheckinStartTime = async (bot: TelegramBot, chatId: number, callbackQuery: TelegramBot.CallbackQuery) => {
-    if (!callbackQuery.data) {
-        await bot.answerCallbackQuery(callbackQuery.id, { text: "Yêu cầu không hợp lệ." });
-        return;
-    }
-
-    const messageListener = async (response: TelegramBot.Message) => {
-        if (response.chat.id !== chatId) return;
-
-        try {
-            if (!response.text) {
-                await bot.sendMessage(chatId, "Lỗi: Không tìm thấy nội dung tin nhắn. Vui lòng thử lại!");
-                return;
-            }
-
-            const startTime = response.text.trim();
-
-            const timeRegex = /^([0-9]|1[0-9]):[0-5][0-9]$/;
-            if (!timeRegex.test(startTime)) {
-                await bot.sendMessage(chatId, "Thời gian không hợp lệ. Vui lòng nhập lại (ví dụ: 8:00 hoặc 13:30).");
-                return;
-            }
-
-            const [hour, minute] = startTime.split(":").map(Number);
-
-            
-        } catch (err) {
-            console.error("Lỗi khi xử lý tin nhắn từ người dùng:", err);
-        }
-    }
-}
-
-export const handleSpecialDuration = async (bot: TelegramBot, chatId: number, callbackQuery: TelegramBot.CallbackQuery) => {
+export const handleSpecialDuration = async (
+    bot: TelegramBot, 
+    chatId: number,  
+    callbackQuery: TelegramBot.CallbackQuery
+) => {
     if (!callbackQuery.data) {
         await bot.answerCallbackQuery(callbackQuery.id, { text: "Yêu cầu không hợp lệ." });
         return;
@@ -123,27 +95,29 @@ export const handleSpecialDuration = async (bot: TelegramBot, chatId: number, ca
 
     await bot.answerCallbackQuery(callbackQuery.id, { text: `Bạn đã chọn: ${type}` });
 
+    // Tạo các nút bằng vòng lặp
+    const inlineKeyboard: TelegramBot.InlineKeyboardButton[][] = [];
+    const maxHours = 8; // Số giờ tối đa
+
+    for (let i = 1; i <= maxHours; i += 4) {
+        const row: TelegramBot.InlineKeyboardButton[] = [];
+        for (let j = i; j < i + 4 && j <= maxHours; j++) {
+            row.push({
+                text: `${j}h`,
+                callback_data: `durationSpecial_${type}_${userId}_${j}`
+            });
+        }
+        inlineKeyboard.push(row);
+    }
+
     await bot.sendMessage(chatId, "<b>Vui lòng chọn số thời gian làm việc</b>", {
         reply_markup: {
-            inline_keyboard: [
-                [
-                    { text: "1h", callback_data: `durationSpecial_${type}_${userId}_1` },
-                    { text: "2h", callback_data: `durationSpecial_${type}_${userId}_2` },
-                    { text: "3h", callback_data: `durationSpecial_${type}_${userId}_3` },
-                    { text: "4h", callback_data: `durationSpecial_${type}_${userId}_4` },
-                ],
-                [
-                    { text: "5h", callback_data: `durationSpecial_${type}_${userId}_5` },
-                    { text: "6h", callback_data: `durationSpecial_${type}_${userId}_6` },
-                    { text: "7h", callback_data: `durationSpecial_${type}_${userId}_7` },
-                    { text: "8h", callback_data: `durationSpecial_${type}_${userId}_8` },
-                ]
-            ],
-            
+            inline_keyboard: inlineKeyboard
         },
         parse_mode: "HTML",
     });
-}
+};
+
 
 export const handleSpecialTimeSelection = async (bot: TelegramBot, chatId: number, callbackQuery: TelegramBot.CallbackQuery) => {
 

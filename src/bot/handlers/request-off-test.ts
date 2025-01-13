@@ -6,7 +6,7 @@ import { off } from "process";
 import { isExistDate, isFutureDate } from "../../services/common/validate-date";
 
 // Hàm xử lý yêu cầu nghỉ phép
-export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Message, onFinish: () => void) => {
+export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Message) => {
     const chatId = msg.chat.id;
     const userName = `${msg.from?.first_name || ""} ${msg.from?.last_name || ""}`.trim();
 
@@ -99,12 +99,111 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
         console.log(account.staff_id);
 
         bot.off("message", messageListener); // Gỡ lắng nghe sau khi xử lý xong
-        onFinish();
     };
 
     bot.on("message", messageListener); // Lắng nghe tin nhắn
 };
 
+// Nhập tay
+// export const handleOffStartTime = async (
+//     bot: TelegramBot,
+//     userId: number,
+//     idOffDay: string,
+//     callbackQuery: TelegramBot.CallbackQuery,
+// ) => {
+//     if (!callbackQuery.data) {
+//         await bot.answerCallbackQuery(callbackQuery.id, { text: "Yêu cầu không hợp lệ." });
+//         return;
+//     }
+//     const offDate = callbackQuery.data?.split("_")[3]
+
+//     const messageListener = async (response: TelegramBot.Message) => {
+//         if (response.chat.id !== userId) return;
+
+//         try {
+//             if (!response.text) {
+//                 await bot.sendMessage(userId, "Lỗi: Không tìm thấy nội dung tin nhắn. Vui lòng thử lại!");
+//                 return;
+//             }
+
+//             const startTime = response.text.trim();
+
+//             const timeRegex = /^([0-9]|1[0-9]):[0-5][0-9]$/;
+//             if (!timeRegex.test(startTime)) {
+//                 await bot.sendMessage(userId, "Thời gian không hợp lệ. Vui lòng nhập lại (ví dụ: 8:00 hoặc 13:30).");
+//                 return;
+//             }
+
+//             const [hour, minute] = startTime.split(":").map(Number);
+
+//             const isValidMorning = hour >= 8 && hour < 12 && (hour !== 11 || minute === 0);
+//             const isValidAfternoon = (hour === 16 && minute <= 30) || (hour >= 13 && hour < 16);
+
+//             let maxDuration = 0;
+
+//             if (isValidMorning) {
+//                 maxDuration = Math.min((12 - hour - (minute > 0 ? 1 : 0)), 3);
+//             } else if (isValidAfternoon) {
+//                 maxDuration = Math.min(((17.5 - (hour + minute / 60)) | 0), 3);
+//             }
+
+//             if (maxDuration < 1) {
+//                 await bot.sendMessage(
+//                     userId,
+//                     "Thời gian không đủ để nghỉ. Vui lòng chọn giờ khác."
+//                 );
+//                 return;
+//             }
+
+//             await handleOffHourlySelection(bot, userId, offDate, startTime, idOffDay, maxDuration);
+
+//             bot.off("message", messageListener);
+//         } catch (err) {
+//             console.error("Lỗi khi xử lý thời gian nghỉ:", err);
+//             await bot.sendMessage(userId, "Có lỗi xảy ra khi xử lý thời gian nghỉ của bạn.");
+//             bot.off("message", messageListener); 
+//         }
+//     };
+
+//     await bot.sendMessage(
+//         userId,
+//         "Vui lòng nhập thời gian nghỉ của bạn, theo cú pháp sau:\n- Ví dụ: 8:00 hoặc 13:30",
+//     );
+
+//     bot.on("message", messageListener);
+// };
+
+// export const handleOffHourlySelection = async (
+//     bot: TelegramBot,
+//     userId: number,
+//     offDate: string,
+//     startTime: string,
+//     idOffDay: string,
+//     maxDuration: number,
+// ) => {
+//     try {
+//         const buttons = [];
+//         for (let i = 1; i <= maxDuration; i++) {
+//             buttons.push({
+//                 text: `${i} giờ`,
+//                 callback_data: `off_hours_${userId}_${offDate}_${startTime}_${i}_${idOffDay}`,
+//             });
+//         }
+
+//         await bot.sendMessage(
+//             userId,
+//             "Vui lòng chọn số giờ nghỉ của bạn",
+//             {
+//                 reply_markup: {
+//                     inline_keyboard: [buttons],
+//                 },
+//             }
+//         );
+//     } catch (err) {
+//         console.error("Lỗi khi chọn số giờ nghỉ:", err);
+//         await bot.sendMessage(userId, "Có lỗi xảy ra khi chọn số giờ nghỉ của bạn.");
+//     }
+// };
 
 export const handleOffStartTime = async (
     bot: TelegramBot,
@@ -116,64 +215,58 @@ export const handleOffStartTime = async (
         await bot.answerCallbackQuery(callbackQuery.id, { text: "Yêu cầu không hợp lệ." });
         return;
     }
-    const offDate = callbackQuery.data?.split("_")[3]
 
-    const messageListener = async (response: TelegramBot.Message) => {
-        if (response.chat.id !== userId) return;
+    const offDate = callbackQuery.data?.split("_")[3];
 
-        try {
-            if (!response.text) {
-                await bot.sendMessage(userId, "Lỗi: Không tìm thấy nội dung tin nhắn. Vui lòng thử lại!");
-                return;
-            }
+    const morningTimes = ["8:00", "9:00", "10:00", "11:00"];
+    const afternoonTimes = ["13:30", "14:30", "15:30", "16:30"];
 
-            const startTime = response.text.trim();
+    const buttons = [
+        morningTimes.map((startTime) => ({
+            text: startTime,
+            callback_data: `off_startTime_${userId}_${offDate}_${startTime}_0_${idOffDay}`,
+        })),
+        afternoonTimes.map((startTime) => ({
+            text: startTime,
+            callback_data: `off_startTime_${userId}_${offDate}_${startTime}_0_${idOffDay}`,
+        })),
+    ];
 
-            const timeRegex = /^([0-9]|1[0-9]):[0-5][0-9]$/;
-            if (!timeRegex.test(startTime)) {
-                await bot.sendMessage(userId, "Thời gian không hợp lệ. Vui lòng nhập lại (ví dụ: 8:00 hoặc 13:30).");
-                return;
-            }
-
-            const [hour, minute] = startTime.split(":").map(Number);
-
-            const isValidMorning = hour >= 8 && hour < 12 && (hour !== 11 || minute === 0);
-            const isValidAfternoon = (hour === 16 && minute <= 30) || (hour >= 13 && hour < 16);
-
-            let maxDuration = 0;
-
-            if (isValidMorning) {
-                maxDuration = Math.min((12 - hour - (minute > 0 ? 1 : 0)), 3);
-            } else if (isValidAfternoon) {
-                maxDuration = Math.min(((17.5 - (hour + minute / 60)) | 0), 3);
-            }
-
-            if (maxDuration < 1) {
-                await bot.sendMessage(
-                    userId,
-                    "Thời gian không đủ để nghỉ. Vui lòng chọn giờ khác."
-                );
-                return;
-            }
-
-            await handleOffHourlySelection(bot, userId, offDate, startTime, idOffDay, maxDuration);
-
-            bot.off("message", messageListener);
-        } catch (err) {
-            console.error("Lỗi khi xử lý thời gian nghỉ:", err);
-            await bot.sendMessage(userId, "Có lỗi xảy ra khi xử lý thời gian nghỉ của bạn.");
-            bot.off("message", messageListener); 
-        }
-    };
+    //off_hours_${userId}_${offDate}_${startTime}_${i}_${idOffDay}
 
     await bot.sendMessage(
         userId,
-        "Vui lòng nhập thời gian nghỉ của bạn, theo cú pháp sau:\n- Ví dụ: 8:00 hoặc 13:30",
+        "Vui lòng chọn thời gian bắt đầu nghỉ:",
+        {
+            reply_markup: {
+                inline_keyboard: buttons,
+            },
+        }
     );
-
-    bot.on("message", messageListener);
 };
 
+export const handleSelectedStartTime = async (
+    bot: TelegramBot,
+    userId: number,
+    offDate: string,
+    startTime: string,
+    idOffDay: string,
+    callbackQuery: TelegramBot.CallbackQuery
+) => {
+    const [hour, minute] = startTime.split(":").map(Number);
+
+    let maxDuration = 0;
+    if (hour >= 8 && hour < 12) {
+        maxDuration = Math.min(12 - hour, 3);
+    } else if (hour >= 13 && hour < 16) {
+        maxDuration = Math.min(17 - hour, 3);
+    } else if (hour === 11 || hour === 16) {
+        maxDuration = 1; 
+    }
+
+    await handleOffHourlySelection(bot, userId, offDate, startTime,idOffDay, maxDuration);
+    await bot.answerCallbackQuery(callbackQuery.id, { text: "Vui lòng chọn số giờ nghỉ." });
+};
 
 export const handleOffHourlySelection = async (
     bot: TelegramBot,
@@ -207,7 +300,6 @@ export const handleOffHourlySelection = async (
     }
 };
 
-
 export const handleOffResponse = async (bot: TelegramBot, userId: number, offDate: string, startTime: string, hour: string, idOffDay: string, callbackQuery: TelegramBot.CallbackQuery) => {
     if (!callbackQuery.data) {
         await bot.answerCallbackQuery(callbackQuery.id, { text: "Yêu cầu không hợp lệ." });
@@ -225,6 +317,29 @@ export const handleOffResponse = async (bot: TelegramBot, userId: number, offDat
         startTime,
         parseInt(hour),
         "pending",
+    );
+
+    const [startHour, startMinute] = startTime.split(":").map(Number);
+    const endHour = startHour + parseInt(hour);
+
+    let endTime
+    if (hour === "8") {
+        endTime = "17:30";
+    }
+    else {
+        endTime = `${endHour}:${startMinute.toString().padStart(2, "0")}`;
+    }
+
+
+    await bot.sendMessage(
+        userId,
+        `📋 <b>Đơn xin nghỉ của bạn đã được gửi với thông tin như sau:</b>\n` +
+            `      - <b>Ngày nghỉ:</b> ${offDate}\n` +
+            `      - <b>Giờ bắt đầu:</b> ${startTime}\n` +
+            `      - <b>Giờ kết thúc:</b> ${endTime}\n` +
+            `      - <b>Lý do:</b> ${offReason}\n\n` +
+            `✅ <i>Vui lòng đợi kết quả xử lý từ admin.</i>`,
+        { parse_mode: "HTML" }
     );
 
     console.log("Data cần nhập vô nè: ", callbackQuery.data);

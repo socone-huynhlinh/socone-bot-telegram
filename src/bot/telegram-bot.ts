@@ -7,6 +7,7 @@ import { handleRequestOff } from "./handlers/request-off-test"
 import { handleAdminResponse } from "./handlers/admin-response"
 import { handleRegister } from "./handlers/register_test"
 import { userState } from "../config/user-state"
+import { handleStart } from "./handlers/start"
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
 
@@ -30,6 +31,10 @@ bot.on("message", (msg) => {
 
     if (text.startsWith("/")) {
         switch (true) {
+            case /^\/start$/.test(text):
+                handleStart(bot, msg)
+                break
+
             case /^\/checkin$/.test(text):
                 handleCheckin(bot, msg)
                 break
@@ -47,8 +52,9 @@ bot.on("message", (msg) => {
                 break
 
             case /^\/off$/.test(text):
-                userState.set(chatId, "requestingOff"); 
-                handleRequestOff(bot, msg, () => userState.delete(chatId)); // Xóa trạng thái sau khi xử lý xong
+                // userState.set(chatId, "requestingOff"); 
+                // handleRequestOff(bot, msg, () => userState.delete(chatId)); // Xóa trạng thái sau khi xử lý xong
+                handleRequestOff(bot, msg)
                 break
 
             case /^\/list-company-staffs$/.test(text):
@@ -56,13 +62,8 @@ bot.on("message", (msg) => {
                 break
 
             case /^\/register$/.test(text):
-                userState.set(chatId, "registering"); 
+                // userState.set(chatId, "registering"); 
                 handleRegister(bot, msg, () => userState.delete(chatId)); // Xóa trạng thái sau khi xử lý xong
-                break
-
-            case /^\/cancel$/.test(text):
-                userState.delete(chatId)
-                bot.sendMessage(chatId, "Đã hủy lệnh.")
                 break
 
             default:

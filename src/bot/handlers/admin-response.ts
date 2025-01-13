@@ -6,7 +6,7 @@ import { registerStatus } from "../../config/register-status";
 import { Staff } from '../../models/user';
 import { addStaff } from "../../services/admin/staff-manage";
 import { handleCheckinMain, handleCheckinSpecial, handleSpecialDuration, handleSpecialTimeSelection } from "./checkin_test";
-import { handleOffStartTime, handleOffAdmin, handleOffResponse } from "./request-off-test";
+import { handleOffStartTime, handleOffAdmin, handleOffResponse, handleSelectedStartTime } from "./request-off-test";
 import { userState } from "../../config/user-state"
 
 export const handleAdminResponse = async (bot: TelegramBot) => {
@@ -56,6 +56,9 @@ export const handleAdminResponse = async (bot: TelegramBot) => {
                 if (type === "hourly") {
                     await handleOffStartTime(bot, userId, idOffDay, callbackQuery);
                 } 
+                else if (type === "startTime") {
+                    await handleSelectedStartTime(bot, userId, offDate, startTime, idOffDay, callbackQuery);
+                }
                 else if (type === "approve" || type === "reject") {
                     await handleOffAdmin(bot, type, userId, offDate, startTime, hour, idOffDay, callbackQuery);
                 }
