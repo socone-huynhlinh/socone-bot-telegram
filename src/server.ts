@@ -5,7 +5,7 @@ import "./bot/telegram-bot" // Đảm bảo bot được khởi động khi serv
 const PORT = process.env.PORT || 3000
 import macRouter from "./routes/mac.route"
 import express, { Request, Response } from "express";
-import checkInRouter from './handler/checkin/checkin-route';
+import checkInRouter from './handlers/checkin/checkin-route';
 import { captureMacMiddleware } from "./middleware/capture-mac-address"
 dotenv.config()
 

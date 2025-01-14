@@ -6,6 +6,9 @@ export class CheckInService implements ICheckInService{
     constructor() {
         this.checkinRepository = new CheckInRepository()
     }
+    insertCheckin=async (staffId: string, workShiftId: string, durationWorkHour: number) => {
+        return await this.checkinRepository.insertCheckin(staffId, workShiftId, durationWorkHour)
+    }
     checkExistCheckinOnDate = async (staffId: string) => {
         return await this.checkinRepository.checkExistCheckinOnDate(staffId)
     }

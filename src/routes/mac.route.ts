@@ -8,7 +8,6 @@ const redisClient = createClient();
 redisClient.connect(); // Kết nối Redis
 const router = Router(); // Ensure router is declared correctly
 const staffService = new StaffService();
-
 router.get("/", async (req: Request, res: Response): Promise<void> => {
     const { chatId } = req.query;
 

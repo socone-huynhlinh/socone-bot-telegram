@@ -1,5 +1,4 @@
 import TelegramBot from "node-telegram-bot-api";
-import {  handleSpecialDuration, handleSpecialTimeSelection } from "../checkin";
 import { handleOffAdmin, handleOffResponse, handleOffStartTime, handleSelectedStartTime, } from "../requests/request-off-test";
 
 export const handleAdminResponse = async (bot: TelegramBot) => {
@@ -26,9 +25,9 @@ export const handleAdminResponse = async (bot: TelegramBot) => {
             } else if (action === "checkin" && type === "special") {
                 // await handleCheckinSpecial(bot, userId, callbackQuery);
             } else if (action === "special") {
-                await handleSpecialDuration(bot, userId, callbackQuery);
+                // await handleSpecialDuration(bot, userId, callbackQuery);
             } else if (action === "durationSpecial") {
-                await handleSpecialTimeSelection(bot, userId, callbackQuery);
+                // await handleSpecialTimeSelection(bot, userId, callbackQuery);
             }
 
             // Request off
