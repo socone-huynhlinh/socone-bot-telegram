@@ -7,6 +7,15 @@ class StaffService implements IStaffService{
     constructor(){
         this.staffRepository = new StaffRepository()
     }
+    getStaffsCheckInOnDateTypeShiftByBranchId(type: string, branchId: string): Promise<Staff[]> {
+        try{
+            const result = this.staffRepository.getStaffsCheckInOnDateTypeShiftByBranchId(type,branchId)
+            return result
+        }catch(err){
+            console.error("Error fetching staffs:",err)
+            throw err
+        }
+    }
     findStaffByMacAddress(macAddress: string): Promise<Staff | null> {
         try{
             const result = this.staffRepository.findStaffByMacAddress(macAddress);

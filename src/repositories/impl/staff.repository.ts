@@ -9,6 +9,27 @@ class StaffRepository implements IStaffRepository{
     constructor(){
         this.pg = dbConnection.getPool()
     }
+  
+    getStaffsCheckInOnDateTypeShiftByBranchId(type:string,branchId: string): Promise<Staff[]> {
+        try{
+            const query = `
+              select s.*,dp.name as department_name,tr.name as type_report,ta.id as tele_id,ta.username as tele_username,ta.phone as tele_phone from staffs s
+                inner join departments dp on s.department_id=dp.id
+                left join type_reports tr on s.type_report_id=tr.id
+                inner join staff_devices sd on s.id=sd.staff_id
+                inner join devices d on sd.device_id=d.id
+                inner join tele_accounts ta on s.tele_id=ta.id
+				inner join checkins on checkins.staff_id=s.id
+				inner join shifts on checkins.shift_id=shifts.id
+                where s.status='approved' and shifts.type=$1 and dp.branch_id=$2 and checkins.time_checkin::date=now()::date
+            `
+            const result = queryData<Staff>(this.pg, query, [type,branchId])
+            return result
+        }catch(err){
+            console.error("Error fetching staffs:",err)
+            throw err
+        }
+    }
     findStaffByMacAddress(macAddress: string): Promise<Staff | null> {
         try{
             const query = `

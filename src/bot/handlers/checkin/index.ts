@@ -7,7 +7,7 @@ import { WorkShiftService } from "../../../services/impl/work-shift.service"
 // src/handlers/checkin.ts
 const workShiftService=new WorkShiftService()
 const checkInService=new CheckInService()
-export const startCheckIn = async (bot: TelegramBot, msg: TelegramBot.Message) => {
+const startCheckIn = async (bot: TelegramBot, msg: TelegramBot.Message) => {
     const chatId = msg.chat.id
     if (!msg.from) {
         bot.sendMessage(chatId, "Không thể thực hiện Check-in vì thiếu thông tin người dùng.")
@@ -42,8 +42,7 @@ export const startCheckIn = async (bot: TelegramBot, msg: TelegramBot.Message) =
     });
     
 }
-
-export const handleCheckIn = async (query:CallbackQuery,bot:TelegramBot) => {
+const handleCheckIn = async (query:CallbackQuery,bot:TelegramBot) => {
     const callbackData = query.data; // Lấy dữ liệu callback
     const chatId = query.message?.chat.id;
     console.log("chat",query.message?.chat)
