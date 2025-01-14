@@ -1,0 +1,29 @@
+name: Lint Check
+
+on:
+    pull_request:
+        branches:
+            - main
+
+jobs:
+    lint:
+        runs-on: ubuntu-latest
+
+        steps:
+            # Kiểm tra mã nguồn
+            - name: Checkout code
+              uses: actions/checkout@v3
+
+            # Thiết lập Node.js
+            - name: Setup Node.js
+              uses: actions/setup-node@v3
+              with:
+                  node-version: "16" # Phiên bản Node.js, thay đổi theo nhu cầu của bạn
+
+            # Cài đặt dependencies
+            - name: Install dependencies
+              run: npm install
+
+            # Chạy linter
+            - name: Run ESLint
+              run: npx eslint . --ext .ts,.tsx

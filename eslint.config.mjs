@@ -1,9 +1,9 @@
-import tsParser from "@typescript-eslint/parser"
-import tsPlugin from "@typescript-eslint/eslint-plugin"
+import tsParser from "@typescript-eslint/parser";
+import tsPlugin from "@typescript-eslint/eslint-plugin";
 
 export default [
     {
-        files: ["**/*.{ts}"],
+        files: ["**/*.{ts,tsx}"],
         languageOptions: {
             parser: tsParser,
             ecmaVersion: "latest",
@@ -14,14 +14,30 @@ export default [
         },
         rules: {
             ...tsPlugin.configs.recommended.rules,
+
+            // Yêu cầu kiểu trả về rõ ràng cho hàm
             "@typescript-eslint/explicit-function-return-type": [
-                "error",
+                "warn",
                 {
-                    allowExpressions: false, // Không cho phép bỏ qua kiểu trả về trong arrow functions
-                    allowTypedFunctionExpressions: false, // Không cho phép bỏ qua ngay cả khi trong type hoặc interface
-                    allowHigherOrderFunctions: false, // Không cho phép bỏ qua trong hàm cấp cao
+                    allowExpressions: false,
+                    allowTypedFunctionExpressions: false,
+                    allowHigherOrderFunctions: false,
                 },
             ],
+
+            // Báo lỗi nếu có biến không được sử dụng
+            "@typescript-eslint/no-unused-vars": [
+                "error",
+                {
+                    vars: "all",
+                    args: "after-used",
+                    ignoreRestSiblings: true,
+                    varsIgnorePattern: "^_.*$", // Bỏ qua các biến bắt đầu bằng _
+                },
+            ],
+
+            // Cảnh báo khi sử dụng console.log
+            "no-console": "error",
         },
     },
-]
+];

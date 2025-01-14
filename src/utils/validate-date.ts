@@ -12,6 +12,5 @@ export const isFutureDate = (dateStr: string): boolean => {
     const date = new Date(year, month - 1, day);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    console.log(`Today: ${today}, Request Date: ${date}`);
     return date >= today;
 }
