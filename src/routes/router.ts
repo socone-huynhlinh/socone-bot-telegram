@@ -24,6 +24,7 @@ class Router {
     this.userData.set(chatId, data);
   }
   getUserData(chatId: number): Record<string, any> | undefined {
+    console.log(`Getting user data: ${chatId} -> ${this.userData.get(chatId)}`);
     return this.userData.get(chatId);
   }
   setUserState(chatId: number, state: string): void {

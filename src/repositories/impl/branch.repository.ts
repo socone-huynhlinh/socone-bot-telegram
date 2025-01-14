@@ -1,15 +1,15 @@
 import { Pool } from "pg";
-import dbConnection from "../config/database";
-import { queryData } from "../utils/query";
-import Branch from "../models/branch";
+import dbConnection from "../../config/database";
+import { queryData } from "../../utils/query";
+import Branch from "../../models/branch";
+import { IBranchRepository } from "../i-branch.repository";
 
-class BranchRepository{
+class BranchRepository implements IBranchRepository {
     private pg: Pool
     constructor() {
       this.pg = dbConnection.getPool()
     }
     getBranchesByCompanyId= async (companyId: string) => {
-        const client = await this.pg.connect()
         try {
             const query = `
                SELECT branch.*
@@ -22,7 +22,6 @@ class BranchRepository{
             console.error("Lỗi khi truy vấn thông tin chi nhánh:", err)
             throw err
         } finally {
-            client.release()
         }
     }
 }

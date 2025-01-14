@@ -1,9 +1,11 @@
 import TelegramBot, { Message, CallbackQuery } from "node-telegram-bot-api";
 import Router from "../../../routes/router";
-import CompanyService from "../../../services/company.service";
 import Company from "../../../models/company";
-import BranchService from "../../../services/branch.service";
 import Branch from "../../../models/branch";
+import DepartmentService from "../../../services/impl/department.service";
+import CompanyService from "../../../services/impl/company.service";
+import BranchService from "../../../services/impl/branch.service";
+import getLocalIp from "../../../utils/get-ip-address";
 import { createClient } from "redis";
 
 const redisClient = createClient();
@@ -15,6 +17,7 @@ redisClient.on("error", (err) => console.error("Redis Client Error:", err));
   await redisClient.connect();
 })();
 
+const departmentService = new DepartmentService();
 const companyService = new CompanyService();
 const branchService = new BranchService();
 const registerRoute = async (msg: Message, bot: TelegramBot, router: Router): Promise<void> => {
@@ -62,21 +65,45 @@ const handleFullName = (msg: Message, bot: TelegramBot, router: Router): void =>
         bot.sendMessage(chatId, "Full name not contain numbers. Please try again:");
     }
 };
-
-const handlePosition =async (msg: Message, bot: TelegramBot, router: Router): Promise<void> => {
-    const chatId = msg.chat.id;
-    const text = msg.text;
-
-    if (text && !/\d/.test(text)) {
-        router.setUserData(chatId, "position", text);
-        const userData = router.getUserData(chatId);
-        await redisClient.set(`user:${chatId}`, JSON.stringify(userData));
-        bot.sendMessage(chatId, "Register profile success. Wait for admin approve.");
-        router.clearUserState(chatId); // Xóa trạng thái của user
-    } else {
-        bot.sendMessage(chatId, "Position not contain numbers. Please try again:");
-    }
+const handleDepartment = (query: CallbackQuery, bot: TelegramBot, router: Router): void => {
+  const callbackData = query.data; // Lấy dữ liệu callback
+  const chatId = query.message?.chat.id;
+  if (callbackData && callbackData.startsWith("department_")) {
+      const parts = callbackData.split("_");
+      const departmentId = parts[parts.length - 1]; // Lấy company ID từ callback_data
+      if (chatId) {
+          router.setUserData(chatId, "departmentId", departmentId);
+          router.setUserState(chatId, "register:email"); // Chuyển sang bước tiếp theo
+          bot.sendMessage(chatId,`Please enter your company email:`);
+      }
+  }
 }
+const handlePosition = async (msg: Message, bot: TelegramBot, router: Router): Promise<void> => {
+  const chatId = msg.chat.id;
+  const text = msg.text;
+
+  if (text && !/\d/.test(text)) {
+      router.setUserData(chatId, "position", text);
+      const userData = router.getUserData(chatId);
+      await redisClient.set(`user:${chatId}`, JSON.stringify(userData));
+      // Gửi đường dẫn để lấy địa chỉ MAC
+      const ipServer=getLocalIp();
+      const portServer=process.env.PORT || 3000;
+      const macCaptureUrl = `${ipServer}:${portServer}/capture-mac?chatId=${chatId}`;
+      router.clearUserState(chatId);
+      bot.sendMessage(
+          chatId,
+          "Please click the link below to register your device and complete your profile:",
+          {
+              reply_markup: {
+                  inline_keyboard: [[{ text: "Register Device", url: macCaptureUrl }]],
+              },
+          }
+      );
+  } else {
+      bot.sendMessage(chatId, "Position must not contain numbers. Please try again:");
+  }
+};
 
 const handlePhone = (msg: Message, bot: TelegramBot, router: Router): void => {
     const chatId = msg.chat.id;
@@ -111,51 +138,35 @@ const handleCompany = async (query: CallbackQuery, bot: TelegramBot): Promise<vo
       }
     }
 };
-const handleBranch = async (query: CallbackQuery, bot: TelegramBot,router:Router): Promise<void> => {
-    const callbackData = query.data; // Lấy dữ liệu callback
-    const chatId = query.message?.chat.id;
-    if (callbackData && callbackData.startsWith("branch_")) {
-        const parts = callbackData.split("_");
-        const branchId = parts[parts.length - 1]; // Lấy company ID từ callback_data
-        if (chatId) {
-            router.setUserData(chatId, "branchId", branchId);
-            router.setUserState(chatId, "register:email"); // Chuyển sang bước tiếp theo
-            bot.sendMessage(chatId,`Please enter your company email:`);
-        }
-    }
-}
-const getAllUsersFromQueue = async (): Promise<Record<string, any>[]> => {
-    const users: Record<string, any>[] = [];
-    let cursor = 0; // Cursor phải là một số, không phải chuỗi
+const handleBranch = async (query: CallbackQuery, bot: TelegramBot, router: Router): Promise<void> => {
+  const callbackData = query.data; // Lấy dữ liệu callback
+  const chatId = query.message?.chat.id;
+  if (callbackData && callbackData.startsWith("branch_")) {
+      const parts = callbackData.split("_");
+      const branchId = parts[parts.length - 1]; // Lấy company ID từ callback_data
+      if (chatId) {
+          const departments = await departmentService.getDepartmentsByBranchId(branchId);
+          router.setUserData(chatId, "branchId", branchId);
+          router.setUserState(chatId, "register:department"); // Chuyển sang bước tiếp theo
 
-    do {
-        // Sử dụng SCAN với cursor và các tùy chọn
-        const scanResult = await redisClient.scan(cursor, {
-            MATCH: "user:*", // Lấy các khóa bắt đầu bằng "user:"
-            COUNT: 100,      // Số lượng keys mỗi batch
-        });
+          // Tạo inline_keyboard với các nút trên một dòng
+          const keyboard = [
+              departments.map(department => ({
+                  text: `${department.name}`,
+                  callback_data: `department_${department.id}`
+              }))
+          ];
 
-        cursor = Number(scanResult.cursor); // Cập nhật cursor thành số
-        const keys = scanResult.keys;
-
-        if (keys.length > 0) {
-            // Sử dụng pipeline để lấy giá trị các keys
-            const results = await Promise.all(
-                keys.map((key) => redisClient.get(key))
-            );
-
-            // Parse JSON từ kết quả và thêm vào danh sách users
-            results.forEach((result) => {
-                if (result) {
-                    const parsed = JSON.parse(result);
-                    users.push(parsed);
-                }
-            });
-        }
-    } while (cursor !== 0); // Dừng khi cursor quay về "0"
-
-    return users;
+          bot.sendMessage(chatId, `Please choose the department you work for in ${parts[1]} branch`, {
+              reply_markup: {
+                  inline_keyboard: keyboard
+              },
+          });
+      }
+  }
 };
+
+
 
 
 // Hàm khởi tạo các route
@@ -168,10 +179,12 @@ const initRegisterRoutes = (router: Router): void => {
   router.addRoute("register:full_name", (msg, bot) => handleFullName(msg, bot, router));
   router.addRoute("register:phone", (msg, bot) => handlePhone(msg, bot, router));
   router.addRoute("register:position", (msg, bot) => handlePosition(msg, bot, router));
+
   
   // Đăng ký callback
   router.addCallback("company_", (query, bot) => handleCompany(query, bot));
   router.addCallback("branch_", (query, bot) => handleBranch(query, bot,router));
+  router.addCallback("department_", (query, bot) => handleDepartment(query, bot,router));
 };
 
 

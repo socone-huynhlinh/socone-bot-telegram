@@ -1,4 +1,4 @@
-import pool from "../../config/database"
+import dbConnection from "../../config/database";
 import WorkOffDay from '../../models/work-off-day';
 
 export const getOffRequestById = async (id: string) => {
@@ -19,6 +19,7 @@ export const getOffRequestById = async (id: string) => {
     const values = [id];
 
     try {
+        const pool = dbConnection.getPool();
         const result = await pool.query(query, values);
         const row = result.rows[0];
 
@@ -50,6 +51,7 @@ export const getOffReasonbyId = async (id: string) => {
 
     const values = [id];
     try {
+        const pool = dbConnection.getPool();
         const result = await pool.query(query, values);
         return result.rows[0].description;
     } catch (err) {
@@ -75,6 +77,9 @@ export const insertOffRequest = async (
     const values = [staffId, startTime, durationHour, status, description];
 
     try {
+
+        const pool = dbConnection.getPool();
+
         const result = await pool.query(query, values);
         return result.rows[0].id; // Trả về ID của yêu cầu mới
     } catch (err) {
@@ -103,6 +108,8 @@ export const updateOffRequest = async (
     const values = [idOffDay, offDate, startTime, durationHour, status];
 
     try {
+        const pool = dbConnection.getPool();
+
         const result = await pool.query(query, values);
         if (result.rowCount === 0) {
             throw new Error(`Không tìm thấy yêu cầu với id: ${idOffDay}`);

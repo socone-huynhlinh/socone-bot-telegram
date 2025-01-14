@@ -1,9 +1,9 @@
 {
     "compilerOptions": {
-        "target": "es2017",
-        "module": "commonjs",
-        "outDir": "./dist",
+       "target": "ES6",
+        "module": "CommonJS",
         "rootDir": "./src",
+        "outDir": "./dist",
         "strict": true,
         "esModuleInterop": true,
         "typeRoots": ["./node_modules/@types", "./src/types"]

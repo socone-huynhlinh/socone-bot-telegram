@@ -1,6 +1,7 @@
-import CompanyRepository from "../repositories/company.repository";
+import CompanyRepository from "../../repositories/impl/company.repository";
+import { ICompanyService } from "../i-company.service";
 
-class CompanyService{
+class CompanyService implements ICompanyService{
     private companyRepository: CompanyRepository;
     constructor(){
         this.companyRepository = new CompanyRepository()

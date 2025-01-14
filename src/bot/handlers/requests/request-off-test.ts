@@ -2,7 +2,6 @@ import TelegramBot from "node-telegram-bot-api";
 import TelegramAccount from "../../../models/telegram-account";
 import { isExistDate, isFutureDate } from "../../../services/common/validate-date";
 import { insertOffRequest, getOffReasonbyId, updateOffRequest, getOffRequestById } from "../../../services/common/work-off-day-infor";
-import { getAccountById } from "../../../services/staff/get-telegram-account";
 
 
 // Hàm xử lý yêu cầu nghỉ phép
@@ -70,7 +69,7 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
         }
 
         const idOffDay = await insertOffRequest(
-            account.staff_id,
+            account.id,
             offDate,
             null, // Start time sẽ được chọn sau
             "pending",

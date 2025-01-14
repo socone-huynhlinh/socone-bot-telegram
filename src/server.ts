@@ -1,99 +1,76 @@
-// src/server.ts
 
 import dotenv from "dotenv"
+
+import "./bot/telegram-bot" // Đảm bảo bot được khởi động khi server chạy
+const PORT = process.env.PORT || 3000
+import macRouter from "./routes/mac.route"
+import express, { Request, Response } from "express";
+import checkInRouter from './handler/checkin/checkin-route';
+import { captureMacMiddleware } from "./middleware/capture-mac-address"
 dotenv.config()
 
-import http from "http"
-import url from "url"
-import "./bot/telegram-bot" // Đảm bảo bot được khởi động khi server chạy
-import { handleCheckinRequest, handleCheckoutRequest } from "./bot/handlers/devices/device-handlers"
-import { validateMacMiddleware } from "./middleware/check-ip-address"
-import getLocalIp from "./utils/get-ip-address"
-const PORT = process.env.PORT || 3000
+const app = express();
 
-// Định nghĩa các route và middleware tương ứng
-interface Route {
-    path: string
-    method: string
-    handler: (query: { chatId?: string; userName?: string; action?: string }, res: http.ServerResponse) => void
-    middleware?: Array<(req: http.IncomingMessage, res: http.ServerResponse, next: () => void) => void>
-}
 
-const routes: Route[] = [
-    {
-        path: "/check-device",
-        method: "GET",
-        handler: (query, res) => {
-            const { chatId, userName, action } = query
-            if (!chatId || !userName || !action) {
-                res.statusCode = 400
-                res.end("Thiếu tham số cần thiết.")
-                return
-            }
-            if (action.split("_")[0] === "checkin") {
-                handleCheckinRequest(parseInt(chatId as string), userName as string, action as string, res)
-            } else if (action === "checkout") {
-                handleCheckoutRequest(chatId as string, userName as string, action as string, res)
-            } else {
-                res.statusCode = 400
-                res.end("Hành động không hợp lệ.")
-            }
-        },
-        middleware: [validateMacMiddleware],
-    },
-    {
-        path: "/check-remote",
-        method: "GET",
-        handler: (query, res) => {
-            const { chatId, userName, action } = query
-            if (!chatId || !userName || !action) {
-                res.statusCode = 400
-                res.end("Thiếu tham số cần thiết.")
-                return
-            }
-            if (action === "checkinRemote") {
-                handleCheckinRequest(parseInt(chatId as string), userName as string, action as string, res)
-            } else if (action === "checkoutRemote") {
-                handleCheckoutRequest(chatId as string, userName as string, action as string, res)
-            } else {
-                res.statusCode = 400
-                res.end("Hành động không hợp lệ.")
-            }
-        },
-    }
-    // Bạn có thể thêm các route khác ở đây nếu cần
-]
+app.use(express.json());
 
-// Tạo server
-const server = http.createServer((req, res) => {
-    const parsedUrl = url.parse(req.url || "", true)
-    const pathname = parsedUrl.pathname || ""
-    const method = req.method || ""
+// Route chính
+app.get("/", (req: Request, res: Response) => {
+    res.send("Hello, Telegram Bot Server is running with TypeScript!");
+});
 
-    // Tìm route phù hợp
-    const route = routes.find((r) => r.path === pathname && r.method === method)
+// Thêm route xử lý đăng ký MAC
+app.use("/capture-mac",captureMacMiddleware, macRouter);
 
-    if (route) {
-        const middlewares = route.middleware || []
-        let index = 0
+//handle router
+app.use("/" , checkInRouter);
 
-        const next = () => {
-            if (index < middlewares.length) {
-                const middleware = middlewares[index++]
-                middleware(req, res, next)
-            } else {
-                route.handler(parsedUrl.query, res)
-            }
-        }
+// Khởi động server
+app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+});
 
-        next()
-    } else {
-        res.statusCode = 404
-        res.end("Not Found")
-    }
-})
-const serverIp = getLocalIp();
-
-server.listen(PORT, () => {
-    console.log(`Server đang chạy trên cổng ${PORT} and ip : ${serverIp} ...`)
-})
+// const routes: Route[] = [
+//     {
+//         path: "/check-device",
+//         method: "GET",
+//         handler: (query, res) => {
+//             const { chatId, userName, action } = query
+//             if (!chatId || !userName || !action) {
+//                 res.statusCode = 400
+//                 res.end("Thiếu tham số cần thiết.")
+//                 return
+//             }
+//             if (action.split("_")[0] === "checkin") {
+//                 handleCheckinRequest(parseInt(chatId as string), userName as string, action as string, res)
+//             } else if (action === "checkout") {
+//                 handleCheckoutRequest(chatId as string, userName as string, action as string, res)
+//             } else {
+//                 res.statusCode = 400
+//                 res.end("Hành động không hợp lệ.")
+//             }
+//         },
+//         middleware: [validateMacMiddleware],
+//     },
+//     {
+//         path: "/check-remote",
+//         method: "GET",
+//         handler: (query, res) => {
+//             const { chatId, userName, action } = query
+//             if (!chatId || !userName || !action) {
+//                 res.statusCode = 400
+//                 res.end("Thiếu tham số cần thiết.")
+//                 return
+//             }
+//             if (action === "checkinRemote") {
+//                 handleCheckinRequest(parseInt(chatId as string), userName as string, action as string, res)
+//             } else if (action === "checkoutRemote") {
+//                 handleCheckoutRequest(chatId as string, userName as string, action as string, res)
+//             } else {
+//                 res.statusCode = 400
+//                 res.end("Hành động không hợp lệ.")
+//             }
+//         },
+//     }
+//     // Bạn có thể thêm các route khác ở đây nếu cần
+// ]

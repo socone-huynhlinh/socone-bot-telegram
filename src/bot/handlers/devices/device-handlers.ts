@@ -4,7 +4,6 @@ import http from "http"
 import bot from "../../telegram-bot"
 import { sessionDay } from "../../../services/common/session-day"
 import { writeCheckin } from "../../../services/staff/valid-checkin"
-import { getAccountById } from "../../../services/staff/get-telegram-account"
 import TelegramAccount from "../../../models/telegram-account"
 
 export const handleCheckinRequest = async (chatId: number, userName: string, action: string, res: http.ServerResponse) => {
