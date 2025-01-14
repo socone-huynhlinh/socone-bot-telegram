@@ -1,4 +1,4 @@
-import { Staff } from "../models/user";
+import Staff from "../models/staff";
 
 const pendingRegistrations = new Map<string, Staff>();
 
