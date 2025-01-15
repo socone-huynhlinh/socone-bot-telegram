@@ -7,12 +7,20 @@ class StaffService implements IStaffService{
     constructor(){
         this.staffRepository = new StaffRepository()
     }
+    findStaffByTeleId(teleId: string): Promise<Staff | null> {
+        const result = this.staffRepository.findStaffByTeleId(teleId);
+        return result.then((staff: Staff | null) => {
+            if (staff) {
+                return mapStaffFromJson(staff);
+            }
+            return null;
+        });
+    }
     getStaffsCheckInOnDateTypeShiftByBranchId(type: string, branchId: string): Promise<Staff[]> {
         try{
             const result = this.staffRepository.getStaffsCheckInOnDateTypeShiftByBranchId(type,branchId)
             return result
         }catch(err){
-            console.error("Error fetching staffs:",err)
             throw err
         }
     }
@@ -27,7 +35,6 @@ class StaffService implements IStaffService{
             });
            
         }catch(err){
-            console.error("Error fetching staffs:",err)
             throw err
         }
     }
@@ -36,7 +43,6 @@ class StaffService implements IStaffService{
             const result = this.staffRepository.getStaffsPendingByBranchId(branchId)
             return result
         }catch(err){
-            console.error("Error fetching staffs:",err)
             throw err
         }
     }
@@ -45,7 +51,6 @@ class StaffService implements IStaffService{
             const result = this.staffRepository.getStaffsByCompanyId(companyId)
             return result
         }catch(err){
-            console.error("Error fetching staffs:",err)
             throw err
         }
     }
@@ -54,26 +59,23 @@ class StaffService implements IStaffService{
             const result = this.staffRepository.getStaffsByDepartmentId(departmentId)
             return result
         }catch(err){
-            console.error("Error fetching staffs:",err)
             throw err
         }
     }
    
-    addStaff = async (staff: Staff) => {
+    addStaff = async (staff: Staff):Promise<string|null> => {
         try{
             const result = await this.staffRepository.addStaff(staff)
             return result
         }catch(err){
-            console.error("Error adding staff:",err)
             throw err
         }
     }
-    getStaffsByBranchId = async (branchId: string) => {
+    getStaffsByBranchId = async (branchId: string):Promise<Staff[]> => {
         try{
             const result = await this.staffRepository.getStaffsByBranchId(branchId)
             return result
         }catch(err){
-            console.error("Error fetching staffs:",err)
             throw err
         }
     }

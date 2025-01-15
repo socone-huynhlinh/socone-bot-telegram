@@ -172,7 +172,7 @@ const handleBranch = async (query: CallbackQuery, bot: TelegramBot, router: Rout
 // Hàm khởi tạo các route
 const initRegisterRoutes = (router: Router): void => {
   // Đăng ký route cha
-  router.addRoute("/register", (msg, bot) => registerRoute(msg, bot, router));
+  router.addRoute("/register", (msg, bot):Promise<void> => registerRoute(msg, bot, router));
 
   // Đăng ký các route con
   router.addRoute("register:email", (msg, bot) => handleEmail(msg, bot, router));
