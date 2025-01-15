@@ -1,9 +1,9 @@
 import TelegramBot from "node-telegram-bot-api";
-import { getAccountById } from "../../services/staff/get-telegram-account";
-import { TelegramAccount } from "../../models/user";
-import { getOffRequestById ,insertOffRequest, updateOffRequest, getOffReasonbyId } from "../../services/common/work-off-day-infor";
-import { isExistDate, isFutureDate } from "../../services/common/validate-date";
-import { userSessions } from "../../config/user-session";
+import { getAccountById } from "../../../services/staff/get-telegram-account";
+import { TelegramAccount } from "../../../models/user";
+import { getOffRequestById ,insertOffRequest, updateOffRequest, getOffReasonbyId } from "../../../services/common/work-off-day-infor";
+import { isExistDate, isFutureDate, isExpiredRequestOffDate } from "../../../services/common/validate-date";
+import { setUserSession, getUserSession, deleteUserSession } from "../../../config/user-session";
 
 // Hàm xử lý yêu cầu nghỉ phép
 export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Message) => {
@@ -12,12 +12,10 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
 
     console.log(`Yêu cầu Off từ: ${userName}`);
 
-    if (userSessions.has(chatId)) {
-        const existingSession = userSessions.get(chatId);
-        if (existingSession?.listener) {
-            bot.off("message", existingSession.listener); 
-        }
-        userSessions.delete(chatId); 
+    const existingSession = await getUserSession(chatId);
+    if (existingSession?.listener) {
+        bot.off("message", existingSession.listener);
+        await deleteUserSession(chatId);
     }
 
     const account: TelegramAccount | null = await getAccountById(chatId);
@@ -35,9 +33,9 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
         if (response.chat.id !== chatId) return;
 
         if (response.text?.trim() === "/cancel") {
-            // bot.off("message", messageListener); 
-            // userSessions.delete(chatId); 
-            // await bot.sendMessage(chatId, "✅ Bạn đã hủy thao tác hiện tại.");
+            bot.off("message", messageListener);
+            await deleteUserSession(chatId);
+            await bot.sendMessage(chatId, "✅ Bạn đã hủy thao tác hiện tại.");
             return;
         }
 
@@ -110,13 +108,13 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
             }
         );
 
-        console.log(account.staff_id);
+        // console.log(account.staff_id);
 
         bot.off("message", messageListener);
-        userSessions.delete(chatId); 
+        await deleteUserSession(chatId);
     };
 
-    userSessions.set(chatId, { command: "requestingOff", listener: messageListener });
+    await setUserSession(chatId, { command: "requestingOff", listener: messageListener });
 
     bot.on("message", messageListener);
 };
@@ -149,7 +147,7 @@ export const handleOffStartTime = async (
         })),
     ];
 
-    userSessions.set(userId, { command: "choosingStartTime" });
+    await setUserSession(userId, { command: "choosingStartTime" });
 
     await bot.sendMessage(
         userId,
@@ -181,7 +179,8 @@ export const handleSelectedStartTime = async (
         maxDuration = 1; 
     }
 
-    userSessions.set(userId, { command: "choosingDuration" });
+    // userSessions.set(userId, { command: "choosingDuration" });
+    await setUserSession(userId, { command: "choosingDuration" });
 
     await handleOffHourlySelection(bot, userId, offDate, startTime,idOffDay, maxDuration);
     await bot.answerCallbackQuery(callbackQuery.id, { text: "Vui lòng chọn số giờ nghỉ." });
@@ -204,7 +203,8 @@ export const handleOffHourlySelection = async (
             });
         }
 
-        userSessions.set(userId, { command: "waitingResponse" });
+        // userSessions.set(userId, { command: "waitingResponse" });
+        await setUserSession(userId, { command: "waitingResponse" });
 
         await bot.sendMessage(
             userId,
@@ -251,7 +251,8 @@ export const handleOffResponse = async (bot: TelegramBot, userId: number, offDat
         endTime = `${endHour}:${startMinute.toString().padStart(2, "0")}`;
     }
 
-    userSessions.delete(userId);
+    // userSessions.delete(userId);
+    await deleteUserSession(userId);
         
     await bot.sendMessage(
         userId,
@@ -294,8 +295,13 @@ export const handleOffAdmin = async (
     callbackQuery: TelegramBot.CallbackQuery
 ) => {
 
-    console.log("Last callback: ", callbackQuery);
-    console.log("Cần truy vấn: ", callbackQuery.data);
+    // console.log("Last callback: ", callbackQuery);
+    // console.log("Cần truy vấn: ", callbackQuery.data);
+
+    if (isExpiredRequestOffDate(offDate)){
+        await bot.answerCallbackQuery(callbackQuery.id, { text: "Đơn xin nghỉ này đã quá hạn!" });
+        return;
+    }
 
     await bot.editMessageReplyMarkup(
         {
@@ -335,7 +341,6 @@ export const handleOffAdmin = async (
     console.log("WorkOffDay start_time: ", workOffDay.start_time);
     console.log("WorkOffDay duration_hour: ", workOffDay.duration_hour);
     console.log("WorkOffDay description: ", workOffDay.description);
-
 
     if (type === "approve") {
         await updateOffRequest(

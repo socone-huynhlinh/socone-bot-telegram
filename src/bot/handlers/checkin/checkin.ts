@@ -1,7 +1,7 @@
 import TelegramBot from "node-telegram-bot-api"
-import { isValidCheckin } from "../../services/staff/valid-checkin"
-import { getAccountById } from "../../services/staff/get-telegram-account"
-import { TelegramAccount } from "../../models/user"
+import { isValidCheckin } from "../../../services/staff/valid-checkin"
+import { getAccountById } from "../../../services/staff/get-telegram-account"
+import { TelegramAccount } from "../../../models/user"
 
 // src/handlers/checkin.ts
 

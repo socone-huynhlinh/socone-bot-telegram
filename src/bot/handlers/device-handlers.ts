@@ -1,5 +1,3 @@
-// src/handlers/deviceHandlers.ts
-
 import http from "http"
 import bot from "../telegram-bot"
 import { sessionDay } from "../../services/common/session-day"
