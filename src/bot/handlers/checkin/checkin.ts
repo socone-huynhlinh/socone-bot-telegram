@@ -49,7 +49,7 @@ export const handleCheckinMain = async (bot: TelegramBot, chatId: number, callba
 
     console.log(`Yêu cầu Check-in ca chính từ: ${userName}`);
 
-    const checkinUrl = `http://192.168.1.27:3000/check-device?chatId=${chatId}&userName=${encodeURIComponent(userName)}&action=checkin_main`;
+    const checkinUrl = `http://192.168.1.15:3000/check-device?chatId=${chatId}&userName=${encodeURIComponent(userName)}&action=checkin_main`;
     await bot.sendMessage(chatId, "<b>Hãy nhấp vào nút bên dưới để thực hiện Check-in ca chính</b>", {
         reply_markup: {
             inline_keyboard: [
@@ -131,7 +131,7 @@ export const handleSpecialTimeSelection = async (bot: TelegramBot, chatId: numbe
 
     console.log(`Yêu cầu Check-in ca chính từ: ${userName}`);
 
-    const checkinUrl = `http://192.168.1.27:3000/check-device?chatId=${chatId}&userName=${encodeURIComponent(userName)}&action=checkin_special_${type}_${duration}`;
+    const checkinUrl = `http://192.168.1.15:3000/check-device?chatId=${chatId}&userName=${encodeURIComponent(userName)}&action=checkin_special_${type}_${duration}`;
     await bot.sendMessage(chatId, "Hãy nhấp vào nút bên dưới để thực hiện Check-in ca chính:", {
         reply_markup: {
             inline_keyboard: [
