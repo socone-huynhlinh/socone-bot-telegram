@@ -29,9 +29,9 @@ bot.on("message", async (msg) => {
                 bot.off("message", session.listener);
             }
             await deleteUserSession(chatId); // Xóa trạng thái
-            await bot.sendMessage(chatId, "Bạn đã hủy thao tác hiện tại.");
+            await bot.sendMessage(chatId, "You have canceled the current action.");
         } else {
-            await bot.sendMessage(chatId, "Không có thao tác nào để hủy.");
+            await bot.sendMessage(chatId, "There is no action to cancel.");
         }
         return;
     }
@@ -67,7 +67,7 @@ bot.on("message", async (msg) => {
                 break;
 
             default:
-                bot.sendMessage(chatId, "Lệnh không hợp lệ. Vui lòng thử lại.");
+                bot.sendMessage(chatId, "Invalid command. Please try again.");
                 break;
         }
     }

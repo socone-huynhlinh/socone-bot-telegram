@@ -17,17 +17,17 @@ export const sessionDay = () => {
 
     // Xác định buổi làm việc và tính giờ đi trễ
     if (nowInMinutes >= morningStart && nowInMinutes <= morningEnd) {
-        session = 'Buổi sáng';
+        session = 'Morning';
         if (nowInMinutes > morningStart) {
             lateTime = nowInMinutes - morningStart; 
         }
     } else if (nowInMinutes >= afternoonStart && nowInMinutes <= afternoonEnd) {
-        session = 'Buổi chiều';
+        session = 'Afternoon';
         if (nowInMinutes > afternoonStart) {
             lateTime = nowInMinutes - afternoonStart; 
         }
     } else {
-        session = 'Ngoài giờ làm việc';
+        session = 'After hours';
         lateTime = 0; 
     }
 

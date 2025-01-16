@@ -11,7 +11,7 @@ export const handleAdminResponse = async (bot: TelegramBot) => {
             console.log("Data:", data);
 
             if (!data) {
-                await bot.answerCallbackQuery(callbackQuery.id, { text: "Dữ liệu callback không hợp lệ." });
+                await bot.answerCallbackQuery(callbackQuery.id, { text: "Invalid callback data!" });
                 return;
             }
 
@@ -58,18 +58,18 @@ export const handleAdminResponse = async (bot: TelegramBot) => {
 
             // Invalid request
             else if (callbackQuery.data === "disabled") {
-                await bot.answerCallbackQuery(callbackQuery.id, { text: "Bạn đã xử lý yêu cầu này trước đó." });
+                await bot.answerCallbackQuery(callbackQuery.id, { text: "You have processed this request before!" });
                 return;
             }
             
             else {
-                await bot.answerCallbackQuery(callbackQuery.id, { text: "Loại yêu cầu không hợp lệ." });
+                await bot.answerCallbackQuery(callbackQuery.id, { text: "Invalid request!" });
                 return;
             }
         }
         catch (error) {
             console.error("Lỗi trong quá trình xử lý phản hồi từ Admin:", error);
-            await bot.answerCallbackQuery(callbackQuery.id, { text: "Có lỗi xảy ra khi xử lý yêu cầu." });
+            await bot.answerCallbackQuery(callbackQuery.id, { text: "Error: occurred while processing request." });
             return;
         }
     });

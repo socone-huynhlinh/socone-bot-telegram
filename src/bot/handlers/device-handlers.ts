@@ -10,11 +10,9 @@ export const handleCheckinRequest = async (chatId: number, userName: string, act
     res.statusCode = 200
     res.setHeader("Content-Type", "text/plain; charset=utf-8")
     res.end(`Check-in thành công cho người dùng ${userName} (Chat ID: ${chatId})`)
-    console.log(`ID ĐÂY NÈ CU: ${chatId}`)
     const { session, lateFormatted, lateTime } = sessionDay();
-    const lateMessage = lateTime > 0 ? `Đi trễ: ${lateFormatted}` : '';
 
-    console.log("Action neeeee: ", action);
+    const lateMessage = lateTime > 0 ? `Late: ${lateFormatted}` : '';
 
     if (action.split("_")[0] === "checkin" && action.split("_")[1] === "main") {
 
@@ -26,7 +24,7 @@ export const handleCheckinRequest = async (chatId: number, userName: string, act
             console.log(`2: ${account.first_name}`)
             console.log(`3: ${account.last_name}`)
             console.log(`4: ${account.staff_id}`)
-            await writeCheckin(account.staff_id, true, lateFormatted, 'office');
+            await writeCheckin(account.staff_id, true, lateFormatted, 'Main shift');
         } else {
             console.log("Không tìm thấy tài khoản.")
         }
@@ -34,14 +32,14 @@ export const handleCheckinRequest = async (chatId: number, userName: string, act
         if (lateMessage === '') {
             bot.sendMessage(
                 chatId,
-                `<b>${userName} - #dev</b>\nCa chính - ${new Date().toLocaleDateString('vi-VN')}\n- Check: ${session}\n- Hình thức: Làm việc tại văn phòng\n\n<b>Cảm ơn vì đã luôn đúng giờ, ngày mới an lành nhé ☀️</b>`,
+                `<b>${userName} - #dev</b>\nMain shift - ${new Date().toLocaleDateString('vi-VN')}\n- Check: ${session}\n- Mode: Office\n\n<b>Thanks for always being on time, have a nice day ☀️</b>`,
                 { parse_mode: "HTML" }
             )
         }
         else {
             bot.sendMessage(
                 chatId,
-                `<b>${userName} - #dev</b>\nCa chính - ${new Date().toLocaleDateString('vi-VN')}\n- Check: ${session}\n- Hình thức: Làm việc tại văn phòng\n- ${lateMessage}\n\n<b>Ngày mới an lành nhé ☀️</b>`,
+                `<b>${userName} - #dev</b>\nMain shift - ${new Date().toLocaleDateString('vi-VN')}\n- Check: ${session}\n- Mode: Office\n- ${lateMessage}\n\n<b>Have a nice day ☀️</b>`,
                 { parse_mode: "HTML" }
             )
         }
@@ -60,16 +58,22 @@ export const handleCheckinRequest = async (chatId: number, userName: string, act
         }
         
         const typeDisplay = {
-            ot: "Tăng ca",
-            compensate: "Bù",
-            main: "Ca chính"
+            ot: "OT",
+            compensate: "Make-up",
+            main: "Main shift special"
         }[action.split("_")[2]] || "Không xác định";
 
         console.log("Type Display: ", typeDisplay);
 
+        if (account){
+            await writeCheckin(account.staff_id, true, lateFormatted, typeDisplay);
+        } else {
+            console.log("Không tìm thấy tài khoản.")
+        }
+
         bot.sendMessage(
             chatId,
-            `<b>${userName} - #dev</b>\n${typeDisplay} - ${new Date().toLocaleDateString('vi-VN')}\n- Check: ${session}\n- Thời gian làm việc: ${action.split("_")[3]} tiếng\n- Hình thức: Làm việc tại văn phòng\n\n<b>Chúc bạn làm việc vui vẻ nhé ☀️</b>`,
+            `<b>${userName} - #dev</b>\n${typeDisplay} - ${new Date().toLocaleDateString('vi-VN')}\n- Check: ${session}\n- Hours: ${action.split("_")[3]} hours\n- Mode: Office\n\n<b>Have a nice work ☀️</b>`,
             { parse_mode: "HTML" }
         )
     }
