@@ -7,6 +7,8 @@ import CompanyService from "../../../services/impl/company.service";
 import BranchService from "../../../services/impl/branch.service";
 import getLocalIp from "../../../utils/get-ip-address";
 import { createClient } from "redis";
+import { validateEmailCompany } from "../../../utils/validate-email";
+import StaffService from "../../../services/impl/staff.service";
 
 const redisClient = createClient();
 
@@ -20,6 +22,7 @@ redisClient.on("error", (err) => console.error("Redis Client Error:", err));
 const departmentService = new DepartmentService();
 const companyService = new CompanyService();
 const branchService = new BranchService();
+const staffService = new StaffService();
 const registerRoute = async (msg: Message, bot: TelegramBot, router: Router): Promise<void> => {
     const chatId = msg.chat.id;
     const companies: Company[] = await companyService.getCompanies();
@@ -40,14 +43,19 @@ const registerRoute = async (msg: Message, bot: TelegramBot, router: Router): Pr
   
 
 // Bước 1: Nhập email
-const handleEmail = (msg: Message, bot: TelegramBot, router: Router): void => {
+const handleEmail = async (msg: Message, bot: TelegramBot, router: Router): Promise<void> => {
   const chatId = msg.chat.id;
   const text = msg.text;
 
-  if (text && text.includes("@")) {
-    router.setUserData(chatId, "email", text);
-    bot.sendMessage(chatId, `Email "${text}" accepted. Please enter your full name:`);
-    router.setUserState(chatId, "register:full_name"); // Chuyển sang bước tiếp theo
+  if (text && text.includes("@") && validateEmailCompany(text)) {
+    if(await staffService.checkExistStaff(text)){
+      bot.sendMessage(chatId, "Email already exists. Please enter another email:");
+    }
+    else{
+      router.setUserData(chatId, "email", text);
+      bot.sendMessage(chatId, `Email "${text}" accepted. Please enter your full name:`);
+      router.setUserState(chatId, "register:full_name"); // Chuyển sang bước tiếp theo
+    }
   } else {
     bot.sendMessage(chatId, "Invalid email. Please enter a valid email:");
   }

@@ -2,6 +2,7 @@ import Staff from "../models/staff";
 
 export interface IStaffService {
     addStaff(staff:Staff): Promise<string|null>
+    checkExistStaff(email: string): Promise<boolean> 
     getStaffsByCompanyId(companyId: string): Promise<Staff[]>
     getStaffsByBranchId(branchId: string): Promise<Staff[]>
     getStaffsByDepartmentId(departmentId: string): Promise<Staff[]>

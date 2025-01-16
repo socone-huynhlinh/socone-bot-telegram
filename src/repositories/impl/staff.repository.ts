@@ -9,6 +9,26 @@ class StaffRepository implements IStaffRepository{
     constructor(){
         this.pg = dbConnection.getPool()
     }
+    checkExistStaff(email: string): Promise<boolean> {
+       try{
+        let query=`
+         select s.*,dp.name as department_name,tr.name as type_report,ta.id as tele_id,ta.username as tele_username,ta.phone as tele_phone from staffs s
+                inner join departments dp on s.department_id=dp.id
+                left join type_reports tr on s.type_report_id=tr.id
+                inner join staff_devices sd on s.id=sd.staff_id
+                inner join devices d on sd.device_id=d.id
+                inner join tele_accounts ta on s.tele_id=ta.id
+                where s.company_email =$1
+        `
+        const result = queryData<Staff>(this.pg,query,[email])
+        return result.then((staffs:Staff[])=>{
+            return staffs.length>0
+        })
+       
+       }catch(err){
+           throw err
+       }
+    }
   
     getStaffsCheckInOnDateTypeShiftByBranchId(type:string,branchId: string): Promise<Staff[]> {
         try{

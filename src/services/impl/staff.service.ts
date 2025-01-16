@@ -7,12 +7,19 @@ class StaffService implements IStaffService{
     constructor(){
         this.staffRepository = new StaffRepository()
     }
+    checkExistStaff(email:string): Promise<boolean> {
+        try{
+            const result = this.staffRepository.checkExistStaff(email)
+            return result
+        }catch(err){
+            throw err
+        }
+    }
     getStaffsCheckInOnDateTypeShiftByBranchId(type: string, branchId: string): Promise<Staff[]> {
         try{
             const result = this.staffRepository.getStaffsCheckInOnDateTypeShiftByBranchId(type,branchId)
             return result
         }catch(err){
-            console.error("Error fetching staffs:",err)
             throw err
         }
     }
@@ -27,7 +34,6 @@ class StaffService implements IStaffService{
             });
            
         }catch(err){
-            console.error("Error fetching staffs:",err)
             throw err
         }
     }
@@ -36,7 +42,6 @@ class StaffService implements IStaffService{
             const result = this.staffRepository.getStaffsPendingByBranchId(branchId)
             return result
         }catch(err){
-            console.error("Error fetching staffs:",err)
             throw err
         }
     }
@@ -45,7 +50,6 @@ class StaffService implements IStaffService{
             const result = this.staffRepository.getStaffsByCompanyId(companyId)
             return result
         }catch(err){
-            console.error("Error fetching staffs:",err)
             throw err
         }
     }
@@ -54,7 +58,6 @@ class StaffService implements IStaffService{
             const result = this.staffRepository.getStaffsByDepartmentId(departmentId)
             return result
         }catch(err){
-            console.error("Error fetching staffs:",err)
             throw err
         }
     }
@@ -64,7 +67,6 @@ class StaffService implements IStaffService{
             const result = await this.staffRepository.addStaff(staff)
             return result
         }catch(err){
-            console.error("Error adding staff:",err)
             throw err
         }
     }
@@ -73,7 +75,6 @@ class StaffService implements IStaffService{
             const result = await this.staffRepository.getStaffsByBranchId(branchId)
             return result
         }catch(err){
-            console.error("Error fetching staffs:",err)
             throw err
         }
     }
