@@ -1,7 +1,7 @@
 type WorkOffDay = {
     id?: string
     staff_id: string
-    start_time?: number
+    start_time?: string
     duration_hour: number
     status: string
     reason: string
