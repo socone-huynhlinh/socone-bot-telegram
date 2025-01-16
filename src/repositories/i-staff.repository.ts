@@ -9,4 +9,5 @@ export interface IStaffRepository {
     getStaffsPendingByBranchId(branchId:string):Promise<Staff[]>
     findStaffByMacAddress(macAddress:string):Promise<Staff|null>
     getStaffsCheckInOnDateTypeShiftByBranchId(type:string,branchId:string):Promise<Staff[]>
+    findStaffByTeleId(teleId:string):Promise<Staff|null>
 }

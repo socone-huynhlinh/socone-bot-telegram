@@ -22,8 +22,6 @@ router.get("/", async (req: Request, res: Response): Promise<void> => {
             res.status(404).send("<h1>Error</h1><p>User not found.</p>");
             return;
         }
-
-        console.log(`User data for Chat ID ${chatId}:`, JSON.parse(userData));
         const user = JSON.parse(userData);
 
         const newStaff: Staff = {
@@ -108,8 +106,34 @@ router.get("/", async (req: Request, res: Response): Promise<void> => {
             `);
         }
     } catch (error) {
-        console.error("Error during registration:", error);
-        res.status(500).send("<h1>Error</h1><p>Internal Server Error.</p>");
+        res.send(`
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Registration Failed</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        text-align: center;
+                        margin-top: 50px;
+                    }
+                    h1 {
+                        color: #EF0000FF;
+                    }
+                    p {
+                        font-size: 18px;
+                        color: #555;
+                    }
+                </style>
+            </head>
+            <body>
+                <h1>Registration Failed!</h1>
+                <p>${error}</p>
+            </body>
+            </html>
+        `);
     }
 });
 
