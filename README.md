@@ -83,10 +83,19 @@ socon-bot-telegram/
 ## Run container
 
 ## Build and start container
+
 ```bash
 docker-compose up -d --build
 ```
+
 ### Remove container
+
 ```bash
 docker-compose down -v
+```
+
+### Backup database
+
+```bash
+pg_dump -U postgres -d socone_telegram_bot -F c -f socone_schemas_bot.dump -p 5434 -h localhost
 ```
