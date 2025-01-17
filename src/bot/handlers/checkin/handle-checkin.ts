@@ -4,13 +4,38 @@ import { WorkShiftService } from "../../../services/impl/work-shift.service";
 
 const workShiftService = new WorkShiftService();
 
+const handleCheckInMain=async(bot:TelegramBot,chatId:number)=>{
+    const ipServer=getLocalIp();
+    if(!ipServer){
+        bot.sendMessage(chatId,"Unable to retrieve the server's IP address");
+        return;
+    }
+    const shifts=await workShiftService.getWorkShiftsByType("main");
+    const portServer=process.env.PORT || 3000;
+    const checkinUrl = `http://${ipServer}:${portServer}/checkin-main?chatId=${chatId}`;
+    if (!shifts || shifts.length === 0) {
+        bot.sendMessage(chatId, "No main shift found!");
+        return;
+    }
+    await bot.sendMessage(chatId, "<b>Please click the button below to check-in</b>", {
+        reply_markup: {
+            inline_keyboard: [
+                shifts.map((shift) => {
+                    return { text: "Check-in", url: `${checkinUrl}&shiftId=${shift.id}` };
+               })
+            ],
+        },
+        parse_mode: "HTML",
+    });
+}
+
 const handleCheckinSpecial = async (bot: TelegramBot,chatId:number) => {
     const shifts = await workShiftService.getWorkShiftsByType("special");
     if (!shifts || shifts.length === 0) {
-        bot.sendMessage(chatId, "Không tìm thấy ca làm việc chính.");
+        bot.sendMessage(chatId, "No main shift found!");
         return;
     }
-    await bot.sendMessage(chatId, "<b>Vui lòng chọn loại ca đặc biệt của bạn</b>", {
+    await bot.sendMessage(chatId, "<b>Please select your special shift type</b>", {
         reply_markup: {
             inline_keyboard: [
                shifts.map((shift) => {
@@ -22,49 +47,23 @@ const handleCheckinSpecial = async (bot: TelegramBot,chatId:number) => {
     });
 };
 
-
-const handleCheckInMain=async(bot:TelegramBot,chatId:number)=>{
-    const ipServer=getLocalIp();
-    if(!ipServer){
-        bot.sendMessage(chatId,"Không thể lấy địa chỉ IP của server");
-        return;
-    }
-    const shifts=await workShiftService.getWorkShiftsByType("main");
-    const portServer=process.env.PORT || 3000;
-    const checkinUrl = `http://${ipServer}:${portServer}/checkin-main?chatId=${chatId}`;
-    if (!shifts || shifts.length === 0) {
-        bot.sendMessage(chatId, "Không tìm thấy ca làm việc chính.");
-        return;
-    }
-    await bot.sendMessage(chatId, "<b>Hãy nhấp vào nút bên dưới để thực hiện Check-in ca chính</b>", {
-        reply_markup: {
-            inline_keyboard: [
-                shifts.map((shift) => {
-                    return { text: shift.name, url: `${checkinUrl}&shiftId=${shift.id}` };
-               })
-            ],
-        },
-        parse_mode: "HTML",
-    });
-}
-
 const handleSpecialDuration = async (
     query: CallbackQuery,
     bot: TelegramBot,
 ) => {
     const chatId = query.message?.chat.id;
     if (!chatId) {
-        await bot.answerCallbackQuery(query.id, { text: "Không thể xác định ID chat." });
+        await bot.answerCallbackQuery(query.id, { text: "Unable to determine chat ID!" });
         return;
     }
     if (!query.data) {
-        await bot.answerCallbackQuery(query.id, { text: "Yêu cầu không hợp lệ." });
+        await bot.answerCallbackQuery(query.id, { text: "Invalid request!" });
         return;
     }
 
     const [shiftId,shiftName] = query.data?.split("_").slice(1) || [];
 
-    await bot.answerCallbackQuery(query.id, { text: `Bạn đã chọn: ${shiftName}` });
+    await bot.answerCallbackQuery(query.id, { text: `You selected: ${shiftName}` });
 
     // Tạo các nút bằng vòng lặp
     const inlineKeyboard: TelegramBot.InlineKeyboardButton[][] = [];
@@ -81,7 +80,7 @@ const handleSpecialDuration = async (
         inlineKeyboard.push(row);
     }
 
-    await bot.sendMessage(chatId, "<b>Vui lòng chọn số thời gian làm việc</b>", {
+    await bot.sendMessage(chatId, "<b>Please select your working hours</b>", {
         reply_markup: {
             inline_keyboard: inlineKeyboard
         },
@@ -89,34 +88,33 @@ const handleSpecialDuration = async (
     });
 };
 
-
 const handleSpecialTimeSelection = async (bot: TelegramBot, query:CallbackQuery) => {
     const chatId = query.message?.chat.id;
     if(!chatId){
-        await bot.answerCallbackQuery(query.id, { text: "Không tìm thấy chat id" });
+        await bot.answerCallbackQuery(query.id, { text: "Unable to determine chat ID!" });
     }
     const [shiftId, duration] = query.data?.split("_").slice(1) || [];
-    await bot.answerCallbackQuery(query.id, { text: `Bạn đã chọn số thời gian làm việc ${duration} tiếng` });
+    await bot.answerCallbackQuery(query.id, { text: `You have selected ${duration} hours of work time` });
     const ipServer=getLocalIp();
     if(!ipServer){
         if (chatId) {
-            bot.sendMessage(chatId,"Không thể lấy địa chỉ IP của server");
+            bot.sendMessage(chatId,"Unable to retrieve the server's IP address");
         }
         return;
     }
     const portServer=process.env.PORT || 3000;
     const checkinUrl = `http://${ipServer}:${portServer}/checkin-special?chatId=${chatId}`;
     if (chatId) {
-        await bot.sendMessage(chatId, "Hãy nhấp vào nút bên dưới để thực hiện Check-in ca chính:", {
+        await bot.sendMessage(chatId, "Please click the button below to check-in", {
             reply_markup: {
                 inline_keyboard: [
                     [
-                        { text: "Thực hiện Check-in", url: `${checkinUrl}&shiftId=${shiftId}&workHour=${duration}` },
+                        { text: "Check-in", url: `${checkinUrl}&shiftId=${shiftId}&workHour=${duration}` },
                     ],
                 ],
             },
         });
     }
-
 }
+
 export {handleCheckinSpecial,handleCheckInMain,handleSpecialDuration,handleSpecialTimeSelection}
