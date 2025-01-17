@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import arp from "node-arp";
 import StaffService from "../services/impl/staff.service";
 import Staff from "../models/staff";
+import TelegramAccount from '../models/telegram-account';
 
 export const validateDeviceMiddleware = async (req: Request, res: Response, next: NextFunction) => {
     let userIp = req.headers["x-forwarded-for"] as string || req.socket.remoteAddress || "";

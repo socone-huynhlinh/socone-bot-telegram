@@ -10,7 +10,7 @@ const checkInService=new CheckInService()
 const startCheckIn = async (bot: TelegramBot, msg: TelegramBot.Message) => {
     const chatId = msg.chat.id
     if (!msg.from) {
-        bot.sendMessage(chatId, "Không thể thực hiện Check-in vì thiếu thông tin người dùng.")
+        bot.sendMessage(chatId, "Unable to perform Check-in due to missing user information.")
         return
     }
     const userName = `${msg.from.first_name || ""} ${msg.from.last_name || ""}`.trim()
@@ -23,13 +23,13 @@ const startCheckIn = async (bot: TelegramBot, msg: TelegramBot.Message) => {
         const isCheckin = await checkInService.checkExistCheckinOnDate(msg.chat.id.toString())
         if (isCheckin) {
             console.log('Người dùng đã Check-in')
-            bot.sendMessage(chatId, "Bạn đã Check-in rồi, không thể Check-in lại.")
+            bot.sendMessage(chatId, "You have already checked in; you cannot check in again.")
             return
         }
     }
     const workShifts:any[]=await workShiftService.getTypeWorkShifts() || []
     console.log("workShifts",workShifts)
-    bot.sendMessage(chatId, "<b>Hãy chọn loại ca làm việc của bạn</b>", {
+    bot.sendMessage(chatId, "<b>Please select your shift type</b>", {
         reply_markup: {
             inline_keyboard: [
                 workShifts.map((workShift) => ({
@@ -58,8 +58,6 @@ const handleCheckIn = async (query:CallbackQuery,bot:TelegramBot) => {
         }
     }
 };
-
-
 
 const initCheckinRoutes=(router:Router)=>{
     router.addRoute("/checkin",(msg,bot)=>startCheckIn(bot,msg))

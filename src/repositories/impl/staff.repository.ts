@@ -139,6 +139,7 @@ class StaffRepository implements IStaffRepository {
     }
     addStaff = async (staff: Staff): Promise<string | null> => {
         const client = await this.pg.connect()
+        const type_report_id = "76f81f93-1e6c-4f7b-9430-bcec5201b5ee"
         try {
             // Bắt đầu transaction
             await client.query("BEGIN")
@@ -155,14 +156,15 @@ class StaffRepository implements IStaffRepository {
             if (result_tele.rows.length > 0) {
                 const tele_id = result_tele.rows[0].id
                 query = `
-                INSERT INTO staffs (department_id, tele_id, full_name, company_email, position, status)
-                VALUES ($1, $2, $3, $4, $5, $6)
+                INSERT INTO staffs (department_id, tele_id, full_name, type_report_id, company_email, position, status)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
                 RETURNING id;
             `
                 const result = await client.query(query, [
                     staff.department?.id,
                     tele_id,
                     staff.full_name,
+                    type_report_id,
                     staff.company_email,
                     staff.position,
                     "pending",
