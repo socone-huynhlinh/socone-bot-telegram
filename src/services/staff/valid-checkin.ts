@@ -6,11 +6,10 @@ export const isValidCheckin = async (staffId: string): Promise<boolean | null> =
     try {
         // Truy vấn kiểm tra trạng thái is_checkin của nhân viên
         const query = `
-            SELECT is_checkin 
-            FROM checkin 
-            WHERE staff_id = $1 AND date_checkin::date = CURRENT_DATE
-            ORDER BY date_checkin DESC -- Lấy bản ghi gần nhất
-            LIMIT 1
+            SELECT * FROM checkins
+            INNER JOIN staffs st
+            ON checkins.staff_id=st.id
+            WHERE st.tele_id = $1 AND DATE(time_checkin) = CURRENT_DATE;
         `
         const res = await client.query(query, [staffId]) 
 
@@ -19,8 +18,7 @@ export const isValidCheckin = async (staffId: string): Promise<boolean | null> =
             return null 
         }
 
-        // Trả về giá trị is_checkin (true/false)
-        return res.rows[0].is_checkin
+        return res.rows.length > 0
     } catch (err) {
         console.error("Lỗi khi kiểm tra trạng thái check-in:", err)
         throw err
@@ -30,16 +28,15 @@ export const isValidCheckin = async (staffId: string): Promise<boolean | null> =
 }
 
 // Hàm ghi trạng thái checkin của nhân viên
-export const writeCheckin = async (staffId: string, isCheckin: boolean, lateTime: string, workMode: string): Promise<void> => {
+export const insertCheckin = async (staffId: string, workShiftId: string, durationWorkHour: number): Promise<void> => {
     const client = await pool.connect() 
     try {
-        // Thực hiện ghi trạng thái checkin của nhân viên
         const updateQuery = `
-            INSERT INTO checkin (staff_id, date_checkin, is_checkin, late_time, work_mode)
-            VALUES ($1, DATE_TRUNC('second', NOW()), $2, $3, $4) -- Thêm bản ghi mới
-            RETURNING *
+            INSERT INTO checkins (staff_id, shift_id, time_checkin, duration_hour)
+                VALUES ($1, $2, CURRENT_TIMESTAMP, $3)
+                RETURNING id;
         `
-        const result = await client.query(updateQuery, [staffId, isCheckin, lateTime, workMode]) 
+        const result = await client.query(updateQuery, [staffId, workShiftId, durationWorkHour]) 
         if ((result.rowCount ?? 0) > 0) {
             console.log(`Ghi trạng thái checkin thành công cho nhân viên ${staffId}`)
         } else {

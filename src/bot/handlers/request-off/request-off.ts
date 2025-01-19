@@ -1,9 +1,11 @@
 import TelegramBot from "node-telegram-bot-api";
 import { getAccountById } from "../../../services/staff/get-telegram-account";
-import { TelegramAccount } from "../../../models/user";
-import { getOffRequestById ,insertOffRequest, updateOffRequest, getOffReasonbyId } from "../../../services/common/work-off-day-infor";
+import { getOffRequestById ,insertOffRequest, updateOffRequest, getOffReasonbyId, insertRequestOff } from "../../../services/common/work-off-day-service";
 import { isExistDate, isFutureDate, isExpiredRequestOffDate } from "../../../services/common/validate-date";
 import { setUserSession, getUserSession, deleteUserSession } from "../../../config/user-session";
+import Staff from "../../../models/staff";
+import { getStaffByChatId } from "../../../services/staff/staff-service";
+import WorkOffDay from '../../../models/work-off-day';
 
 // Hàm xử lý yêu cầu nghỉ phép
 export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Message) => {
@@ -18,8 +20,8 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
         await deleteUserSession(chatId);
     }
 
-    const account: TelegramAccount | null = await getAccountById(chatId);
-    if (!account) {
+    const staff: Staff | null = await getStaffByChatId(chatId.toString())
+    if (!staff) {
         bot.sendMessage(chatId, "Account not found in the system.");
         return;
     }
@@ -81,10 +83,19 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
             return;
         }
 
+        // const workOffDay: WorkOffDay = {
+        //     staff_id: staff.id!,
+        //     start_time: offDate,
+        //     duration_hour: 0,
+        //     status: "pending",
+        //     reason: offReason,
+        // }
+        // const idOffDay=await insertRequestOff(workOffDay);
+
         const idOffDay = await insertOffRequest(
-            account.staff_id,
+            staff.id!,
             offDate,
-            null, 
+            999, 
             "pending",
             offReason,
         );
@@ -203,7 +214,6 @@ export const handleOffHourlySelection = async (
             });
         }
 
-        // userSessions.set(userId, { command: "waitingResponse" });
         await setUserSession(userId, { command: "waitingResponse" });
 
         await bot.sendMessage(
@@ -318,12 +328,12 @@ export const handleOffAdmin = async (
         }
     ).catch((err) => console.error('Error while editing button:', err.message));
 
-    const account: TelegramAccount | null = await getAccountById(userId);
+    // const account: TelegramAccount | null = await getAccountById(userId);
 
-    if (!account) {
-        bot.sendMessage(userId, "Account not found in the system.");
-        return;
-    }
+    // if (!account) {
+    //     bot.sendMessage(userId, "Account not found in the system.");
+    //     return;
+    // }
 
     // off_approve_7986019982_09/01/2025_12h00_1
     // action = off, type = approve, userId = 7986019982, detail = 09/01/2025, subdetail1 = 12h00, subdetail2 = 1
@@ -332,7 +342,7 @@ export const handleOffAdmin = async (
     // type = approved, rejected, pending
     // start_time = offDate + startTime
 
-    console.log(account.staff_id);
+    // console.log(account.staff_id);
 
     const workOffDay = await getOffRequestById(idOffDay);
     console.log("WorkOffDay id: ", workOffDay.id);
@@ -340,7 +350,7 @@ export const handleOffAdmin = async (
     console.log("WorkOffDay status: ", workOffDay.status);
     console.log("WorkOffDay start_time: ", workOffDay.start_time);
     console.log("WorkOffDay duration_hour: ", workOffDay.duration_hour);
-    console.log("WorkOffDay description: ", workOffDay.description);
+    console.log("WorkOffDay description: ", workOffDay.reason);
 
     if (type === "approve") {
         await updateOffRequest(

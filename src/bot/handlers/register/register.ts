@@ -1,6 +1,6 @@
 import TelegramBot from "node-telegram-bot-api";
 import { registerStatus } from "../../../config/register-status";
-import { Staff } from "../../../models/user";
+// import { Staff } from "../../../models/user";
 import { addStaff } from "../../../services/admin/staff-manage";
 import { deleteUserSession, getUserSession, setUserSession } from "../../../config/user-session";
 
@@ -152,17 +152,17 @@ export const handleRegisterResponse = async (bot: TelegramBot, action: string, u
     if (action === 'approve') {
         console.log("Approve register");
 
-        const staff: Staff = {
-            id: "",
-            full_name: "Test1",
-            role_name: "developer",
-            phone_number: "1231231231",
-            company_mail: email,
-        };
+        // const staff: Staff = {
+        //     id: "",
+        //     full_name: "Test1",
+        //     role_name: "developer",
+        //     phone_number: "1231231231",
+        //     company_mail: email,
+        // };
 
-        console.log("Staff:", staff);
+        // console.log("Staff:", staff);
 
-        await addStaff(staff);
+        // await addStaff(staff);
 
         await bot.sendMessage(userId, `✅ Yêu cầu đăng ký với email ${email} của bạn đã được Admin phê duyệt. 🎉`);
         await bot.sendMessage(-4620420034, `✅ Bạn đã phê duyệt yêu cầu đăng ký với email ${email}.`);

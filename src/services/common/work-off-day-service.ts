@@ -11,7 +11,7 @@ export const getOffRequestById = async (id: string) => {
             status, 
             created_at, 
             updated_at, 
-            description
+            reason
         FROM work_off_days
         WHERE id = $1;
     `;
@@ -30,7 +30,7 @@ export const getOffRequestById = async (id: string) => {
             status: row.status,
             created_at: row.created_at,
             updated_at: row.updated_at,
-            description: row.description
+            reason: row.reason
         }
         return workOffDay;
 
@@ -42,8 +42,8 @@ export const getOffRequestById = async (id: string) => {
 
 export const getOffReasonbyId = async (id: string) => {
     const query = `
-            SELECT 
-            description
+        SELECT 
+            reason
         FROM work_off_days
         WHERE id = $1;
     `;
@@ -51,7 +51,7 @@ export const getOffReasonbyId = async (id: string) => {
     const values = [id];
     try {
         const result = await pool.query(query, values);
-        return result.rows[0].description;
+        return result.rows[0].reason;
     } catch (err) {
         console.error("Lỗi khi lấy lý do nghỉ từ DB:", err);
         throw err;
@@ -63,16 +63,16 @@ export const insertOffRequest = async (
     startTime: string,
     durationHour: number | null,
     status: string,
-    description: string
+    reason: string
 ) => {
     const query = `
         INSERT INTO work_off_days 
-        (staff_id, start_time, duration_hour, status, created_at, description) 
+        (staff_id, start_time, duration_hour, status, created_at, reason) 
         VALUES ($1, TO_TIMESTAMP($2, 'DD/MM/YYYY HH24:MI') AT TIME ZONE 'Asia/Ho_Chi_Minh', $3, $4, NOW(), $5) 
         RETURNING id;
     `;
 
-    const values = [staffId, startTime, durationHour, status, description];
+    const values = [staffId, startTime, durationHour, status, reason];
 
     try {
         const result = await pool.query(query, values);
@@ -114,3 +114,41 @@ export const updateOffRequest = async (
         throw err;
     }
 };
+
+export const insertRequestOff = async (workOffDay: WorkOffDay): Promise<string | null> => {
+    const client = await pool.connect();
+    try{
+        const query=`
+            INSERT INTO work_off_days (staff_id, start_time, duration_hour, reason, status) VALUES ($1,$2,$3,$4,$5) RETURNING id;
+        `
+        const values=[workOffDay.staff_id,workOffDay.start_time,workOffDay.duration_hour,workOffDay.reason,workOffDay.status]
+        const result = await client.query(query,values)
+        return result.rows[0].id
+    }catch(err){
+        throw err
+    }
+    finally{
+        client.release()
+    }
+}
+
+export const updateRequestOff = async (workOffDay: WorkOffDay): Promise<void> => {
+    const client = await pool.connect();
+    try{
+        const query=`
+            UPDATE work_off_days
+            SET
+                start_time=$2,
+                duration_hour=$3, 
+                status=$5
+            WHERE id=$1;
+        `
+        const values=[workOffDay.id, workOffDay.start_time,workOffDay.duration_hour,workOffDay.status]
+        await client.query(query,values)
+    }catch(err){
+        throw err
+    }
+    finally{
+        client.release()
+    }
+}

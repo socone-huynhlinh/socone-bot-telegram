@@ -1,9 +1,8 @@
 import TelegramBot from "node-telegram-bot-api";
-import { handleCheckinRemote, handleCheckoutRemote } from "./handlers/checkin/checkin-remote";
 import { handleGetListStaffs } from "./handlers/list-company-staffs";
 import { handleRequestOff } from "./handlers/request-off/request-off";
 import { handleAdminResponse } from "./handlers/admin/admin-response";
-import { handleStart } from "./handlers/start";
+import { handleStart } from "./handlers/start/start";
 import { setUserSession, getUserSession, deleteUserSession } from "../config/user-session";
 import { handleCheckin } from "./handlers/checkin/checkin";
 import { handleRegister } from "./handlers/register/register";
@@ -44,14 +43,6 @@ bot.on("message", async (msg) => {
 
             case /^\/checkin$/.test(text):
                 handleCheckin(bot, msg);
-                break;
-
-            case /^\/checkinremote$/.test(text):
-                handleCheckinRemote(bot, msg);
-                break;
-
-            case /^\/checkoutremote$/.test(text):
-                handleCheckoutRemote(bot, msg);
                 break;
 
             case /^\/off$/.test(text):

@@ -1,11 +1,11 @@
 import http from "http"
 import bot from "../telegram-bot"
 import { sessionDay } from "../../services/common/session-day"
-import { writeCheckin } from "../../services/staff/valid-checkin"
-import { getAccountById } from "../../services/staff/get-telegram-account"
-import { TelegramAccount } from "../../models/user"
+import { insertCheckin } from "../../services/staff/valid-checkin"
+import { getStaffByChatId } from "../../services/staff/staff-service"
+import Staff, { mapStaffFromJson } from "../../models/staff"
 
-export const handleCheckinRequest = async (chatId: number, userName: string, action: string, res: http.ServerResponse) => {
+export const handleCheckinRequest = async (chatId: number, userName: string, action: string, shiftId: string,res: http.ServerResponse) => {
     // Xử lý logic Check-in ở đây
     res.statusCode = 200
     res.setHeader("Content-Type", "text/plain; charset=utf-8")
@@ -18,13 +18,13 @@ export const handleCheckinRequest = async (chatId: number, userName: string, act
 
         console.log("0: ", chatId);
 
-        const account: TelegramAccount | null = await getAccountById(chatId)
-        if (account) {
-            console.log(`1: ${account.id}`)
-            console.log(`2: ${account.first_name}`)
-            console.log(`3: ${account.last_name}`)
-            console.log(`4: ${account.staff_id}`)
-            await writeCheckin(account.staff_id, true, lateFormatted, 'Main shift');
+        // const account: TelegramAccount | null = await getAccountById(chatId)
+        const staff: Staff | null = await getStaffByChatId(chatId.toString())
+        const jsonStaff = mapStaffFromJson(staff);
+
+        if (jsonStaff?.id) {
+            await insertCheckin(jsonStaff.id, shiftId, 8);
+            console.log("Telegram Account: ", jsonStaff.tele_account?.username);
         } else {
             console.log("Không tìm thấy tài khoản.")
         }
@@ -32,14 +32,14 @@ export const handleCheckinRequest = async (chatId: number, userName: string, act
         if (lateMessage === '') {
             bot.sendMessage(
                 chatId,
-                `<b>${userName} - #dev</b>\nMain shift - ${new Date().toLocaleDateString('vi-VN')}\n- Check: ${session}\n- Mode: Office\n\n<b>Thanks for always being on time, have a nice day ☀️</b>`,
+                `<b>${jsonStaff.tele_account?.username} - #dev</b>\nMain shift - ${new Date().toLocaleDateString('vi-VN')}\n- Check: ${session}\n- Mode: Office\n\n<b>Thanks for always being on time, have a nice day ☀️</b>`,
                 { parse_mode: "HTML" }
             )
         }
         else {
             bot.sendMessage(
                 chatId,
-                `<b>${userName} - #dev</b>\nMain shift - ${new Date().toLocaleDateString('vi-VN')}\n- Check: ${session}\n- Mode: Office\n- ${lateMessage}\n\n<b>Have a nice day ☀️</b>`,
+                `<b>${jsonStaff.tele_account?.username} - #dev</b>\nMain shift - ${new Date().toLocaleDateString('vi-VN')}\n- Check: ${session}\n- Mode: Office\n- ${lateMessage}\n\n<b>Have a nice day ☀️</b>`,
                 { parse_mode: "HTML" }
             )
         }
@@ -47,69 +47,32 @@ export const handleCheckinRequest = async (chatId: number, userName: string, act
     else if (action.split("_")[0] === "checkin" && action.split("_")[1] === "special") {
         console.log("0: ", chatId);
 
-        const account: TelegramAccount | null = await getAccountById(chatId)
-        if (account) {
-            console.log(`1: ${account.id}`)
-            console.log(`2: ${account.first_name}`)
-            console.log(`3: ${account.last_name}`)
-            console.log(`4: ${account.staff_id}`)
-        } else {
-            console.log("Không tìm thấy tài khoản.")
-        }
-        
+        // const account: TelegramAccount | null = await getAccountById(chatId)
+        const staff: Staff | null = await getStaffByChatId(chatId.toString())
+        const jsonStaff = mapStaffFromJson(staff);
+
         const typeDisplay = {
             ot: "OT",
-            compensate: "Make-up",
+            "time in lieu": "Time in lieu",
             main: "Main shift special"
-        }[action.split("_")[2]] || "Không xác định";
+        }[decodeURIComponent(action.split("_")[2])] || "Không xác định";
+
+        const duration = action.split("_")[3];
 
         console.log("Type Display: ", typeDisplay);
 
-        if (account){
-            await writeCheckin(account.staff_id, true, lateFormatted, typeDisplay);
+        if (staff?.id) {
+            await insertCheckin(staff.id, shiftId, parseInt(duration));
         } else {
             console.log("Không tìm thấy tài khoản.")
         }
 
         bot.sendMessage(
             chatId,
-            `<b>${userName} - #dev</b>\n${typeDisplay} - ${new Date().toLocaleDateString('vi-VN')}\n- Check: ${session}\n- Hours: ${action.split("_")[3]} hours\n- Mode: Office\n\n<b>Have a nice work ☀️</b>`,
+            `<b>${jsonStaff.tele_account?.username} - #dev</b>\n${typeDisplay} - ${new Date().toLocaleDateString('vi-VN')}\n- Check: ${session}\n- Hours: ${action.split("_")[3]} hours\n- Mode: Office\n\n<b>Have a nice work ☀️</b>`,
             { parse_mode: "HTML" }
         )
     }
-
-    else if (action === 'checkinRemote') {
-
-        console.log("0: ", chatId);
-
-        const account: TelegramAccount | null = await getAccountById(chatId)
-        if (account) {
-            console.log(`1: ${account.id}`)
-            console.log(`2: ${account.first_name}`)
-            console.log(`3: ${account.last_name}`)
-            console.log(`4: ${account.staff_id}`)
-            await writeCheckin(account.staff_id, true, lateFormatted, 'remote');
-        } else {
-            console.log("Không tìm thấy tài khoản.")
-        }
-
-        if (lateMessage === '') {
-            bot.sendMessage(
-                chatId,
-                `<b>${userName} - #dev</b>\nCa chính - ${new Date().toLocaleDateString('vi-VN')}\n- Checkin: ${session}\n- Hình thức: Làm việc từ xa\n\n<b>Cảm ơn vì đã luôn đúng giờ, ngày mới an lành nhé ☀️</b>`,
-                { parse_mode: "HTML" }
-            )
-        }
-        else {
-            bot.sendMessage(
-                chatId,
-                `<b>${userName} - #dev</b>\nCa chính - ${new Date().toLocaleDateString('vi-VN')}\n- Checkin: ${session}\n- Hình thức: Làm việc từ xa\n- ${lateMessage}\n\n<b>Ngày mới an lành nhé ☀️</b>`,
-                { parse_mode: "HTML" }
-            )
-        }
-    }
-
-
 }
 
 export const handleCheckoutRequest = (chatId: string, userName: string, action: string, res: http.ServerResponse) => {

@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 3000
 interface Route {
     path: string
     method: string
-    handler: (query: { chatId?: string; userName?: string; action?: string }, res: http.ServerResponse) => void
+    handler: (query: { chatId?: string; userName?: string; action?: string, shiftId?: string }, res: http.ServerResponse) => void
     middleware?: Array<(req: http.IncomingMessage, res: http.ServerResponse, next: () => void) => void>
 }
 
@@ -23,14 +23,14 @@ const routes: Route[] = [
         path: "/check-device",
         method: "GET",
         handler: (query, res) => {
-            const { chatId, userName, action } = query
-            if (!chatId || !userName || !action) {
+            const { chatId, userName, action, shiftId } = query
+            if (!chatId || !userName || !action || !shiftId) {
                 res.statusCode = 400
                 res.end("Thiếu tham số cần thiết.")
                 return
             }
             if (action.split("_")[0] === "checkin") {
-                handleCheckinRequest(parseInt(chatId as string), userName as string, action as string, res)
+                handleCheckinRequest(parseInt(chatId as string), userName as string, action as string, shiftId as string, res)
             } else if (action === "checkout") {
                 handleCheckoutRequest(chatId as string, userName as string, action as string, res)
             } else {
@@ -44,14 +44,14 @@ const routes: Route[] = [
         path: "/check-remote",
         method: "GET",
         handler: (query, res) => {
-            const { chatId, userName, action } = query
-            if (!chatId || !userName || !action) {
+            const { chatId, userName, action, shiftId } = query
+            if (!chatId || !userName || !action || !shiftId) {
                 res.statusCode = 400
                 res.end("Thiếu tham số cần thiết.")
                 return
             }
             if (action === "checkinRemote") {
-                handleCheckinRequest(parseInt(chatId as string), userName as string, action as string, res)
+                handleCheckinRequest(parseInt(chatId as string), userName as string, action as string, shiftId as string, res)
             } else if (action === "checkoutRemote") {
                 handleCheckoutRequest(chatId as string, userName as string, action as string, res)
             } else {

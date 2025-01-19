@@ -17,17 +17,20 @@ export const handleAdminResponse = async (bot: TelegramBot) => {
 
             console.log("Callback nhận được:", callbackQuery);
 
-            const [action, type, userChatId, detail, subdetail] = data.split('_');
+            const [action, type, userChatId, detail, subdetail, subdetail2] = data.split('_');
 
             const userId = parseInt(userChatId);
             
             // Checkin
             if (action === "checkin" && type === "main") {
-                await handleCheckinMain(bot, userId, callbackQuery);
+                // await handleCheckinMain(bot, userId, callbackQuery);
+                bot.answerCallbackQuery(callbackQuery.id, { text: "You have selected main shift check-in." });
             } else if (action === "checkin" && type === "special") {
-                await handleCheckinSpecial(bot, userId, callbackQuery);
+                // await handleCheckinSpecial(bot, userId);
+                bot.answerCallbackQuery(callbackQuery.id, { text: "You have selected special shift check-in." });
             } else if (action === "special") {
                 await handleSpecialDuration(bot, userId, callbackQuery);
+                // bot.answerCallbackQuery(callbackQuery.id, { text: "You have selected special shift." });
             } else if (action === "durationSpecial") {
                 await handleSpecialTimeSelection(bot, userId, callbackQuery);
             }
