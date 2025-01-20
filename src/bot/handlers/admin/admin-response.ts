@@ -2,6 +2,7 @@ import TelegramBot from "node-telegram-bot-api";
 import { handleCheckinMain, handleCheckinSpecial, handleSpecialDuration, handleSpecialTimeSelection } from "../checkin/checkin";
 import { handleOffStartTime, handleOffAdmin, handleOffResponse, handleSelectedStartTime } from "../request-off/request-off";
 import { handleRegisterResponse } from "../register/register";
+import { handleDepartment } from "../register/register-test";
 
 export const handleAdminResponse = async (bot: TelegramBot) => {
     bot.on("callback_query", async (callbackQuery) => {
@@ -54,9 +55,11 @@ export const handleAdminResponse = async (bot: TelegramBot) => {
             }
 
             // Register
-            else if (type === "register") {
-                console.log("Register response");
-                await handleRegisterResponse(bot, action, userId, detail, callbackQuery);
+            else if (action === "register") {
+                console.log("Register response:");
+                if (type === "branch") {
+                    await handleDepartment(bot, callbackQuery);
+                }
             } 
 
             // Invalid request

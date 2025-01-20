@@ -1,70 +1,73 @@
 import TelegramBot from "node-telegram-bot-api"
 import { isValidCheckin } from "../../../services/staff/valid-checkin"
-import { getAccountById } from "../../../services/staff/get-telegram-account"
-import TelegramAccount from "../../../models/telegram-account"
 import { getWorkShiftByType, getWorkShiftByTypeAndName } from '../../../services/common/work-shift-service';
 import isOutOfWorkingHours from "../../../utils/workingHours";
 import Staff, { mapStaffFromJson } from "../../../models/staff";
 import { getStaffByChatId } from "../../../services/staff/staff-service";
-
-// src/handlers/checkin.ts
+import { deleteUserSession, getUserSession, setUserSession } from "../../../config/user-session";
 
 export const handleCheckin = async (bot: TelegramBot, msg: TelegramBot.Message) => {
-    const chatId = msg.chat.id
+    const chatId = msg.chat.id;
     if (!msg.from) {
-        bot.sendMessage(chatId, "Unable to perform Check-in due to missing user information.")
-        return
+        bot.sendMessage(chatId, "Unable to perform Check-in due to missing user information.");
+        return;
     }
-    const userName = `${msg.from.first_name || ""} ${msg.from.last_name || ""}`.trim()
+    const userName = `${msg.from.first_name || ""} ${msg.from.last_name || ""}`.trim();
 
-    console.log(`Check-in request from: ${userName}`)
+    console.log(`Check-in request from: ${userName}`);
 
-    const account: TelegramAccount | null = await getAccountById(chatId)
-    const staff: Staff | null = await getStaffByChatId(chatId.toString())
+    const existingSession = await getUserSession(chatId);
+    if (existingSession?.listener) {
+        bot.off("message", existingSession.listener);
+        await deleteUserSession(chatId);
+    }
+
+    const staff: Staff | null = await getStaffByChatId(chatId.toString());
+    if (!staff) {
+        bot.sendMessage(chatId, "You have not registered yet. Please register an account to use this feature.");
+        return;
+    }
+
     const jsonStaff = mapStaffFromJson(staff);
-
-    // Kiểm tra xem người dùng đã Check-in chưa
-    // if (jsonStaff.tele_account) {
-    //     const isCheckin = await isValidCheckin(jsonStaff.tele_account.id)
-    //     if (isCheckin) {
-    //         console.log('Người dùng đã Check-in')
-    //         bot.sendMessage(chatId, "You have already checked in; you cannot check in again.")
-    //         return
-    //     }
-    //     else {
-    //         console.log('Người dùng chưa Check-in')
-    //     }
-    // }
-
-    if (!isOutOfWorkingHours()) {
-        if (jsonStaff.type_staff === "fulltime") {
-            await handleSpecialDurationFullTime(bot, chatId)
+    if (jsonStaff?.tele_account) {
+        const isCheckin = await isValidCheckin(jsonStaff.tele_account.id);
+        if (isCheckin) {
+            console.log('User has already checked in');
+            bot.sendMessage(chatId, "You have already checked in; you cannot check in again.");
+            return;
         }
-        else {
-            await handleCheckinSpecial(bot, chatId)
+    }
+
+    const messageListener = async (response: TelegramBot.Message) => {
+        if (response.chat.id !== chatId) return;
+
+        if (response.text?.trim() === "/cancel") {
+            bot.off("message", messageListener);
+            await deleteUserSession(chatId);
+            // await bot.sendMessage(chatId, "✅ You have canceled the current action.");
+            return;
         }
+        bot.off("message", messageListener);
+        await deleteUserSession(chatId);
+    };
+
+    bot.on("message", messageListener);
+
+    await setUserSession(chatId, { command: "checkingIn", listener: messageListener });
+
+    if (isOutOfWorkingHours()) {
+        await handleCheckinSpecial(bot, chatId);
+    }
+    else if (jsonStaff?.type_staff === "fulltime") {
+        await handleSpecialDurationPartTime(bot, chatId);
     }
     else {
-        await handleCheckinMain(bot, chatId, userName)
+        await handleCheckinMain(bot, chatId, userName);
     }
+};
 
-    // bot.sendMessage(chatId, "<b>Please select your shift type</b>", {
-    //     reply_markup: {
-    //         inline_keyboard: [
-    //             [
-    //                 { text: "Main shift" , callback_data: `checkin_main_${chatId}`},
-    //                 { text: "Special shift" , callback_data: `checkin_special_${chatId}`},
-    //             ],
-    //         ],
-    //     },
-    //     parse_mode: "HTML",
-    // })
-}
 
 export const handleCheckinMain = async (bot: TelegramBot, chatId: number, userName: string) => {
-    // await bot.answerCallbackQuery(callbackQuery.id, { text: "You have selected main shift check-in." });
-    // console.log("Callback id: ", callbackQuery.id);
-    // const userName = `${callbackQuery.from.first_name || ""} ${callbackQuery.from.last_name || ""}`.trim();
     const shift = await getWorkShiftByType("main");
 
     if (!shift) {
@@ -105,7 +108,7 @@ export const handleCheckinSpecial = async (bot: TelegramBot, chatId: number) => 
     });
 };
 
-export const handleSpecialDurationFullTime = async (bot: TelegramBot, chatId: number) => {
+export const handleSpecialDurationPartTime = async (bot: TelegramBot, chatId: number) => {
     const inlineKeyboard: TelegramBot.InlineKeyboardButton[][] = [];
     const maxHours = 8; 
 

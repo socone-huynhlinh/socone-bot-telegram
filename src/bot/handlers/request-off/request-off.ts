@@ -1,11 +1,9 @@
 import TelegramBot from "node-telegram-bot-api";
-import { getAccountById } from "../../../services/staff/get-telegram-account";
 import { getOffRequestById ,insertOffRequest, updateOffRequest, getOffReasonbyId, insertRequestOff } from "../../../services/common/work-off-day-service";
-import { isExistDate, isFutureDate, isExpiredRequestOffDate } from "../../../services/common/validate-date";
-import { setUserSession, getUserSession, deleteUserSession } from "../../../config/user-session";
+import { isExistDate, isFutureDate, isExpiredRequestOffDate } from "../../../utils/validate-date";
+import { deleteUserSession, getUserSession, setUserSession } from "../../../config/user-session";
 import Staff from "../../../models/staff";
 import { getStaffByChatId } from "../../../services/staff/staff-service";
-import WorkOffDay from '../../../models/work-off-day';
 
 // Hàm xử lý yêu cầu nghỉ phép
 export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Message) => {
@@ -16,16 +14,17 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
 
     const existingSession = await getUserSession(chatId);
     if (existingSession?.listener) {
+        console.log("Listener is existing");
         bot.off("message", existingSession.listener);
         await deleteUserSession(chatId);
     }
 
     const staff: Staff | null = await getStaffByChatId(chatId.toString())
     if (!staff) {
-        bot.sendMessage(chatId, "Account not found in the system.");
+        bot.sendMessage(chatId, "You have not registered yet. Please register an account to use this feature.");
         return;
     }
-
+    
     await bot.sendMessage(
         chatId,
         'Please select the day you need off and the reason, using the format:\n- Day/Month/Year-Reason\n- Example: 10/01/2025-sick'
@@ -83,15 +82,6 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
             return;
         }
 
-        // const workOffDay: WorkOffDay = {
-        //     staff_id: staff.id!,
-        //     start_time: offDate,
-        //     duration_hour: 0,
-        //     status: "pending",
-        //     reason: offReason,
-        // }
-        // const idOffDay=await insertRequestOff(workOffDay);
-
         const idOffDay = await insertOffRequest(
             staff.id!,
             offDate,
@@ -119,17 +109,13 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
             }
         );
 
-        // console.log(account.staff_id);
-
         bot.off("message", messageListener);
         await deleteUserSession(chatId);
-    };
-
+    };    
     await setUserSession(chatId, { command: "requestingOff", listener: messageListener });
 
     bot.on("message", messageListener);
 };
-
 
 export const handleOffStartTime = async (
     bot: TelegramBot,
@@ -181,6 +167,18 @@ export const handleSelectedStartTime = async (
 ) => {
     const [hour, minute] = startTime.split(":").map(Number);
 
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+
+    console.log("Selected time:", hour, minute);
+    console.log("Current time:", currentHour, currentMinute);
+
+    if (hour < currentHour || (hour === currentHour && minute < currentMinute)) {
+        await bot.answerCallbackQuery(callbackQuery.id, { text: "Invalid start time!" });
+        return;
+    }
+
     let maxDuration = 0;
     if (hour >= 8 && hour < 12) {
         maxDuration = Math.min(12 - hour, 3);
@@ -209,7 +207,7 @@ export const handleOffHourlySelection = async (
         const buttons = [];
         for (let i = 1; i <= maxDuration; i++) {
             buttons.push({
-                text: `${i} h`,
+                text: `${i}-hour`,
                 callback_data: `off_hours_${userId}_${offDate}_${startTime}_${i}_${idOffDay}`,
             });
         }

@@ -1,6 +1,6 @@
 import http from "http"
 import bot from "../telegram-bot"
-import { sessionDay } from "../../services/common/session-day"
+import { sessionDay } from "../../utils/session-day"
 import { insertCheckin } from "../../services/staff/valid-checkin"
 import { getStaffByChatId } from "../../services/staff/staff-service"
 import Staff, { mapStaffFromJson } from "../../models/staff"

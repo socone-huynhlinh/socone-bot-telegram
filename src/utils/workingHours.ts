@@ -1,11 +1,25 @@
 const isOutOfWorkingHours = (): boolean => {
-    const now = new Date()
-    const start = new Date()
-    start.setHours(7, 0, 0, 0) // 7:00 AM
-    const end = new Date()
-    end.setHours(17, 30, 0, 0) // 5:30 PM
+    const now = new Date();
+    const day = now.getDay();
 
-    return now < start || now > end
-}
+    console.log(`Today is: ${day}`);
 
-export default isOutOfWorkingHours
+    if (day === 0 || day === 6) {
+        return true; 
+    }
+
+    const start = new Date();
+    start.setHours(7, 0, 0, 0); 
+    const end = new Date();
+    end.setHours(17, 30, 0, 0); 
+
+    if (now < start || now > end) {
+        return true;
+    }
+
+    return false; 
+};
+
+// const test = isOutOfWorkingHours();
+
+export default isOutOfWorkingHours;

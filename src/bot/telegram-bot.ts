@@ -5,7 +5,7 @@ import { handleAdminResponse } from "./handlers/admin/admin-response";
 import { handleStart } from "./handlers/start/start";
 import { setUserSession, getUserSession, deleteUserSession } from "../config/user-session";
 import { handleCheckin } from "./handlers/checkin/checkin";
-import { handleRegister } from "./handlers/register/register";
+import { handleRegister } from "./handlers/register/register-test";
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 

@@ -16,7 +16,6 @@ export const isFutureDate = (dateStr: string): boolean => {
     return date >= today;
 }   
 
-// Kiem tra request off date co con hieu luc khong (3 ngay truoc ngay hien tai)
 export const isExpiredRequestOffDate = (dateStr: string): boolean => {
     const [day, month, year] = dateStr.split("/").map(Number);
     const date = new Date(year, month - 1, day);
@@ -26,4 +25,26 @@ export const isExpiredRequestOffDate = (dateStr: string): boolean => {
     // const diffTime = date.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays >= 3;
+}
+
+
+export const isValidStartTime = (offDate: string, startTime: string): boolean => {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    const currentDay = now.getDate();
+    const currentMonth = now.getMonth() + 1; // Months are 0-based
+    const currentYear = now.getFullYear();
+
+    const [offDay, offMonth, offYear] = offDate.split("/").map(Number);
+
+    const [selectedHour, selectedMinute] = startTime.split(":").map(Number);
+
+    const selectedDate = new Date(offYear, offMonth - 1, offDay, selectedHour, selectedMinute);
+    const currentDate = new Date(currentYear, currentMonth - 1, currentDay, currentHour, currentMinute);
+
+    console.log("Selected date:", selectedDate);
+    console.log("Current date:", currentDate);
+
+    return selectedDate >= currentDate;
 }
