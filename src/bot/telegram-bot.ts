@@ -1,74 +1,75 @@
-import TelegramBot from "node-telegram-bot-api";
-import { handleGetListStaffs } from "./handlers/list-company-staffs";
-import { handleRequestOff } from "./handlers/request-off/request-off";
-import { handleAdminResponse } from "./handlers/admin/admin-response";
-import { handleStart } from "./handlers/start/start";
-import { setUserSession, getUserSession, deleteUserSession } from "../config/user-session";
-import { handleCheckin } from "./handlers/checkin/checkin";
-import { handleRegister } from "./handlers/register/register-test";
-
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+import TelegramBot from "node-telegram-bot-api"
+import { handleGetListStaffs } from "./handlers/list-company-staffs"
+import { handleRequestOff } from "./handlers/request-off/request-off"
+import { handleAdminResponse } from "./handlers/admin/admin-response"
+import { handleStart } from "./handlers/start/start"
+import { setUserSession, getUserSession, deleteUserSession } from "../config/user-session"
+import { handleCheckin } from "./handlers/checkin/checkin"
+import { handleRegister } from "./handlers/register/register-test"
+import dotenv from "dotenv"
+dotenv.config()
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
 
 if (!TELEGRAM_BOT_TOKEN) {
-    throw new Error("TELEGRAM_BOT_TOKEN không được cấu hình trong .env");
+    throw new Error("TELEGRAM_BOT_TOKEN không được cấu hình trong .env")
 }
 
-const bot = new TelegramBot(TELEGRAM_BOT_TOKEN, { polling: true });
+const bot = new TelegramBot(TELEGRAM_BOT_TOKEN, { polling: true })
 
 bot.on("message", async (msg) => {
-    const chatId = msg.chat.id;
-    const text = msg.text?.trim() || "";
+    const chatId = msg.chat.id
+    const text = msg.text?.trim() || ""
 
     if (text === "/cancel") {
-        const session = await getUserSession(chatId);
+        const session = await getUserSession(chatId)
 
         if (session) {
             // Dừng lắng nghe nếu có listener
             if (session.listener) {
-                bot.off("message", session.listener);
+                bot.off("message", session.listener)
             }
-            await deleteUserSession(chatId); // Xóa trạng thái
-            await bot.sendMessage(chatId, "You have canceled the current action.");
+            await deleteUserSession(chatId) // Xóa trạng thái
+            await bot.sendMessage(chatId, "You have canceled the current action.")
         } else {
-            await bot.sendMessage(chatId, "There is no action to cancel.");
+            await bot.sendMessage(chatId, "There is no action to cancel.")
         }
-        return;
+        return
     }
 
     if (text.startsWith("/")) {
         switch (true) {
             case /^\/start$/.test(text):
-                handleStart(bot, msg);
-                break;
+                handleStart(bot, msg)
+                break
 
             case /^\/checkin$/.test(text):
-                handleCheckin(bot, msg);
-                break;
+                handleCheckin(bot, msg)
+                break
 
             case /^\/off$/.test(text):
-                handleRequestOff(bot, msg);
-                break;
+                handleRequestOff(bot, msg)
+                break
 
             case /^\/register$/.test(text):
-                handleRegister(bot, msg);
-                break;
+                handleRegister(bot, msg)
+                break
 
             case /^\/list-company-staffs$/.test(text):
-                handleGetListStaffs(bot, msg);
-                break;
+                handleGetListStaffs(bot, msg)
+                break
 
             default:
-                bot.sendMessage(chatId, "Invalid command. Please try again.");
-                break;
+                bot.sendMessage(chatId, "Invalid command. Please try again.")
+                break
         }
     }
     // else {
     //     bot.sendMessage(chatId, "Bạn vừa gửi tin nhắn không phải là lệnh.");
     // }
-});
+})
 
-handleAdminResponse(bot);
+handleAdminResponse(bot)
 
-console.log("Bot Telegram đã được khởi động!");
+console.log("Bot Telegram đã được khởi động!")
 
-export default bot;
+export default bot

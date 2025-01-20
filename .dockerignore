@@ -1,0 +1,32 @@
+# Loại trừ node_modules
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Loại trừ các file cấu hình tạm thời
+.DS_Store
+*.swp
+*.swo
+.vscode
+.idea
+
+# Loại trừ các tệp log và cache
+*.log
+*.cache
+*.tmp
+
+# Loại trừ các tệp và thư mục build tạm thời
+dist
+build
+coverage
+out
+
+# Loại trừ tệp môi trường (bảo mật)
+.env
+.env.local
+.env.*.local
+
+# Loại trừ các tệp Git và CI/CD
+.git
+.gitignore
+.github
