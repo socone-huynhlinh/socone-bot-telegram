@@ -771,6 +771,21 @@ CREATE TYPE public.employment_type AS ENUM ('fulltime', 'parttime');
 ALTER TABLE public.staffs
 ADD COLUMN type_staff public.employment_type DEFAULT 'fulltime';
 
+ALTER TABLE public.staff_devices
+    DROP CONSTRAINT fk_staff_devices_staff,  -- Xóa ràng buộc khóa ngoại cũ
+    ADD CONSTRAINT fk_staff_devices_staff FOREIGN KEY (staff_id)
+    REFERENCES public.staffs(id) ON DELETE CASCADE;  -- Thêm hành động CASCADE
+
+ALTER TABLE public.tele_accounts
+    DROP CONSTRAINT fk_staffs_tele,  -- Xóa ràng buộc khóa ngoại cũ
+    ADD CONSTRAINT fk_staffs_tele FOREIGN KEY (tele_id)
+    REFERENCES public.staffs(id) ON DELETE CASCADE;  -- Thêm hành động CASCADE
+
+ALTER TABLE public.devices
+    DROP CONSTRAINT fk_devices_staff,  -- Nếu có khóa ngoại với staff
+    ADD CONSTRAINT fk_devices_staff FOREIGN KEY (staff_id)
+    REFERENCES public.staffs(id) ON DELETE CASCADE;
+
 
 --
 -- PostgreSQL database dump complete
