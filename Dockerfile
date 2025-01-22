@@ -8,6 +8,8 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 
 # Install dependencies (bao gồm cả devDependencies)
+RUN apt-get update && apt-get install -y iputils-ping
+
 RUN npm install
 
 # Copy toàn bộ project files vào container
