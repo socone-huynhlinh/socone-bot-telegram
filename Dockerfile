@@ -9,6 +9,7 @@ COPY package*.json ./
 
 # Install dependencies (bao gồm cả devDependencies)
 RUN apt-get update && apt-get install -y iputils-ping
+RUN apt-get update && apt-get install -y net-tools
 
 RUN npm install
 
