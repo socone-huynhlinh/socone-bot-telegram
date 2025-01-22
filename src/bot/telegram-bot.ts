@@ -1,11 +1,10 @@
 import TelegramBot from "node-telegram-bot-api"
-import { handleGetListStaffs } from "./handlers/list-company-staffs"
 import { handleRequestOff } from "./handlers/request-off/request-off"
 import { handleAdminResponse } from "./handlers/admin/admin-response"
 import { handleStart } from "./handlers/start/start"
 import { setUserSession, getUserSession, deleteUserSession } from "../config/user-session"
 import { handleCheckin } from "./handlers/checkin/checkin"
-import { handleRegister } from "./handlers/register/register-test"
+import { handleRegister } from "./handlers/register/register"
 import dotenv from "dotenv"
 import { handleMenu } from "./handlers/menu/menu"
 dotenv.config()

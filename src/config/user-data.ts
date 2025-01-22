@@ -9,3 +9,6 @@ export const getUserData = (chatId: number): Record<string, any> | undefined =>{
     console.log(`Getting user data: ${chatId} -> ${userData.get(chatId)}`);
     return userData.get(chatId);
 }
+export const deleteUserData = (chatId: number): void =>{
+    userData.delete(chatId);
+}

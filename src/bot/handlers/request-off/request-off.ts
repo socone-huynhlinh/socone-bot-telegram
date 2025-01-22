@@ -7,6 +7,8 @@ import { getStaffByChatId } from "../../../services/staff/staff-service";
 import { DateTime } from 'luxon';
 import { calculateOffDay } from "../../../utils/offDay";
 
+const idAdmin = process.env.ID_GROUP_OFF || "";
+
 export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Message) => {
     const chatId = msg.chat.id;
     const userName = `${msg.from?.first_name || ""} ${msg.from?.last_name || ""}`.trim();
@@ -20,14 +22,14 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
 
     const staff: Staff | null = await getStaffByChatId(chatId.toString())
     if (!staff) {
-        bot.sendMessage(chatId, "You have not registered yet. Please register an account to use this feature.");
+        bot.sendMessage(chatId, "You have not registered yet. Please use /register to register an account to use this feature.");
         await deleteUserSession(chatId);
         return;
     }
     
     await bot.sendMessage(
         chatId,
-        'Please select the day you need off and the reason, using the format:\n- Day/Month/Year-Reason\n- Example: 10/01/2025-sick'
+        'Please select the day you need off and the reason, using the format:\n- Month/Day/Year-Reason\n- Example: 10/31/2025-sick'
     );
 
     const messageListener = async (response: TelegramBot.Message) => {
@@ -46,27 +48,29 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
         }
 
         const [offDate, offReason] = response.text.split("-").map((str) => str.trim());
+        const [day, month, year] = offDate.split("/"); 
+        const newOffDate = `${month}/${day}/${year}`;
 
-        if (!offDate) {
+        if (!newOffDate) {
             await bot.sendMessage(
                 chatId,
-                "Error: You have not entered a date! Please re-enter using format:\n- Day/month/year-reason\n- Example: 10/01/2025-sick"
+                "Error: You have not entered a date! Please re-enter using format:\n- Month/Day/Year-reason\n- Example: 10/31/2025-sick"
             );
             return;
         }
 
-        console.log("Day off:", offDate);
+        console.log("Day off:", newOffDate);
         console.log("Lý do:", offReason);
 
-        if (!isExistDate(offDate)) {
+        if (!isExistDate(newOffDate)) {
             await bot.sendMessage(
                 chatId,
-                "Error: Invalid date! Please re-enter using the format:\n-Day/Month/Year-Reason\n- Example: 10/01/2025-sick"
+                "Error: Invalid date! Please re-enter using the format:\n-Month/Day/Year-Reason\n- Example: 10/31/2025-sick"
             );
             return;
         }
 
-        if (!isFutureDate(offDate)) {
+        if (!isFutureDate(newOffDate)) {
             await bot.sendMessage(
                 chatId,
                 "Error: The requested day off cannot be before the current date. Please re-enter!"
@@ -77,14 +81,14 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
         if (!offReason) {
             await bot.sendMessage(
                 chatId,
-                "Error: You have not entered a reason! Please re-enter using the format:\n-Day/Month/Year-Reason\n- Example: 10/01/2025-sick"
+                "Error: You have not entered a reason! Please re-enter using the format:\n-Month/Day/Year-Reason\n- Example: 10/31/2025-sick"
             );
             return;
         }
 
         const idOffDay = await insertOffRequest(
             staff.id!,
-            offDate,
+            newOffDate,
             999, 
             "pending",
             offReason,
@@ -97,12 +101,12 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
                 reply_markup: {
                     inline_keyboard: [
                         [
-                            { text: "Full day", callback_data: `off_full_${chatId}_${offDate}_08:00_8_${idOffDay}` },
-                            { text: "Morning", callback_data: `off_morning_${chatId}_${offDate}_08:00_4_${idOffDay}` },
-                            { text: "Afternoon", callback_data: `off_afternoon_${chatId}_${offDate}_13:30_4_${idOffDay}` },
+                            { text: "Full day", callback_data: `off_full_${chatId}_${newOffDate}_08:00_8_${idOffDay}` },
+                            { text: "Morning", callback_data: `off_morning_${chatId}_${newOffDate}_08:00_4_${idOffDay}` },
+                            { text: "Afternoon", callback_data: `off_afternoon_${chatId}_${newOffDate}_13:30_4_${idOffDay}` },
                         ],
                         [
-                            { text: "Hourly", callback_data: `off_hourly_${chatId}_${offDate}_startTime_0_${idOffDay}` },
+                            { text: "Hourly", callback_data: `off_hourly_${chatId}_${newOffDate}_startTime_0_${idOffDay}` },
                         ],
                     ],
                 },
@@ -155,7 +159,6 @@ export const handleRequestOffSelection = async (
     } else if (type === "morning") {
         await bot.answerCallbackQuery(callbackQuery.id, { text: "You selected Morning." });
     } else if (type === "afternoon") {
-        await bot.sendMessage(chatId, "You selected Afternoon.");
         await bot.answerCallbackQuery(callbackQuery.id, { text: "You selected Afternoon." });
     } else {
         await bot.answerCallbackQuery(callbackQuery.id, { text: "Invalid selection." });
@@ -251,29 +254,7 @@ export const handleSelectedStartTime = async (
             // await deleteUserSession(chatId);
         };
 
-    // const [offDay, offMonth, offYear] = offDate.split("/").map(Number);
-    // const offDateString = `${offYear}-${offMonth}-${offDay}`;
-
-    // const timeZone = "Asia/Ho_Chi_Minh";
-    // const offDateLocal = toZonedTime(new Date(offDateString), timeZone);
-
     const [startHour, startMinute] = startTime.split(":").map(Number);
-    // const currentDate = new Date();
-    
-    // const currentDateLocal = toZonedTime(currentDate, timeZone);
-    
-    // console.log("Current time:", currentDateLocal);
-    // console.log("Selected time:", offDateLocal);
-
-    // if (offDateLocal < currentDateLocal) {
-    //     await bot.answerCallbackQuery(callbackQuery.id, { text: "Invalid date! The selected date is in the past." });
-    //     return;
-    // }
-
-    // if (startHour < currentDateLocal.getHours() || (startHour === currentDateLocal.getHours() && startMinute < currentDateLocal.getMinutes())) {
-    //     await bot.answerCallbackQuery(callbackQuery.id, { text: "Invalid start time! The selected time has already passed." });
-    //     return;
-    // }
 
     const currentDate = new Date();
     const currentDateTime = DateTime.fromJSDate(currentDate, { zone: "Asia/Ho_Chi_Minh" }).toFormat("yyyy-MM-dd HH:mm:ss.SSSZZ");
@@ -297,7 +278,6 @@ export const handleSelectedStartTime = async (
         maxDuration = 1; 
     }
 
-    // userSessions.set(userId, { command: "choosingDuration" });
     await setUserSession(userId, { command: "choosingDuration", listener: messageListener });
 
     await handleOffHourlySelection(bot, userId, offDate, startTime,idOffDay, maxDuration);
@@ -400,7 +380,7 @@ export const handleOffResponse = async (bot: TelegramBot, userId: number, offDat
     console.log("Data cần nhập vô nè: ", callbackQuery.data);
 
     await bot.sendMessage(
-        -4620420034, 
+        idAdmin, 
         `<b>Time-off request from:</b> ${userName}\n - Day off: ${offDate}\n - Start time: ${startTime}\n - Hours: ${hour}h\n - Reason: ${offReason}`,
         {
             reply_markup: {
@@ -466,8 +446,8 @@ export const handleOffAdmin = async (
             "approved",
         );
 
-        await bot.sendMessage(userId, `✅ Your request-off for ${offDate} has been approved by Admin.. 🎉`);
-        await bot.sendMessage(-4620420034, `✅ You were approved for the request-off on the request ${offDate}.`);
+        await bot.sendMessage(userId, `✅ Your request-off for <b>${offDate}</b> has been approved by Admin. 🎉`, { parse_mode : 'HTML' });
+        await bot.sendMessage(idAdmin, `✅ You were approved for the request-off on the request <b>${offDate}</b>.`, { parse_mode : 'HTML' });
     } else {
         await updateOffRequest(
             idOffDay,
@@ -477,7 +457,7 @@ export const handleOffAdmin = async (
             "rejected",
         );
         await bot.sendMessage(userId, `❌ Your request-off for ${offDate} has been rejected by Admin. ❌`);
-        await bot.sendMessage(-4620420034, `❌ Your request-off for ${offDate} has been rejected by Admin.`);
+        await bot.sendMessage(idAdmin, `❌ Your request-off for ${offDate} has been rejected by Admin.`);
     }
 
     await bot.answerCallbackQuery(callbackQuery.id, { text: "Request processed!" });

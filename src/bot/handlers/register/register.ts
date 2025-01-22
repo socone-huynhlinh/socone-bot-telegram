@@ -1,145 +1,381 @@
-import TelegramBot from "node-telegram-bot-api";
-import { registerStatus } from "../../../config/register-status";
-// import { Staff } from "../../../models/user";
-import { addStaff } from "../../../services/admin/staff-manage";
+import TelegramBot, { Message } from "node-telegram-bot-api";
+import Company from "../../../models/company";
+import { getCompanies } from "../../../services/common/company-service";
+import { getBranchesByCompanyId } from "../../../services/common/branch-service";
+import Branch from "../../../models/branch";
+import Department from "../../../models/department";
+import { getDepartmentsByBranchId } from "../../../services/common/department-service";
 import { deleteUserSession, getUserSession, setUserSession } from "../../../config/user-session";
+import { validateEmailCompany } from "../../../utils/valid-email";
+import { checkExistStaff, updateStatusStaffByTeleId } from "../../../services/staff/staff-service";
+import getLocalIp from "../../../utils/get-ip-address";
+import { getUserData, setUserData } from "../../../config/user-data";
+import redisClient from "../../../config/redis-client";
 
-const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-const phoneRegex = /^[0-9]{10,11}$/;
+const idAdmin = process.env.ID_GROUP_OFF || "";
 
-export const handleRegister = async (bot: TelegramBot, msg: TelegramBot.Message) => {
+export const handleRegister = async (bot: TelegramBot, msg: TelegramBot.Message): Promise<void> => {
     const chatId = msg.chat.id;
 
-    // Kiểm tra và xóa phiên làm việc hiện tại nếu tồn tại
+    if (!msg.from) {
+        bot.sendMessage(chatId, "Unable to perform Check-in due to missing user information.");
+        return;
+    }
+    const userName = `${msg.from.first_name || ""} ${msg.from.last_name || ""}`.trim();
+
+    // const existingSession = await getUserSession(chatId);
+    // if (existingSession) {
+    //     await bot.sendMessage(chatId, "You are already in the process of registering. Please complete the current registration process before starting a new one.");
+    //     return;
+    // }
+
     const existingSession = await getUserSession(chatId);
     if (existingSession?.listener) {
-        bot.off("message", existingSession.listener);
-        await deleteUserSession(chatId);
+        bot.off("message", existingSession.listener); // Xóa listener cũ
     }
 
-    // Gửi thông báo hướng dẫn
-    await bot.sendMessage(
-        chatId,
-        `Chào mừng bạn đến với hệ thống đăng ký! 😊\n\nĐể đăng ký, vui lòng làm theo cú pháp sau:\n\n` +
-        `*Đăng ký: Tên đầy đủ | Vai trò | Số điện thoại | Email*\n\n` +
-        `Ví dụ:\nĐăng ký: Nguyễn Văn A | developer | 0912345678 | nguyen.a@gmail.com\n\n` +
-        `📌 *Lưu ý:* Vai trò phải là: developer, designer, content creator.\n` +
-        `Sau khi gửi, yêu cầu của bạn sẽ được admin xác nhận trước khi hoàn tất.`
-    );
-
-    // Lắng nghe phản hồi từ người dùng
     const messageListener = async (response: TelegramBot.Message) => {
         if (response.chat.id !== chatId) return;
 
-        // Xử lý lệnh /cancel
         if (response.text?.trim() === "/cancel") {
             bot.off("message", messageListener);
             await deleteUserSession(chatId);
-            await bot.sendMessage(chatId, "✅ Bạn đã hủy thao tác đăng ký.");
+            // await bot.sendMessage(chatId, "Action canceled.");
             return;
         }
-
-        try {
-            const userMessage = response.text;
-
-            if (!userMessage) {
-                await bot.sendMessage(chatId, "Lỗi: Không tìm thấy nội dung tin nhắn. Vui lòng thử lại!");
-                return;
-            }
-
-            const parts = userMessage.split("|").map((str) => str.trim());
-
-            if (parts.length !== 4) {
-                await bot.sendMessage(chatId, "Vui lòng cung cấp đầy đủ thông tin: Tên đầy đủ | Vai trò | Số điện thoại | Email");
-                return;
-            }
-
-            const [fullName, roleName, phoneNumber, companyMail] = parts;
-
-            if (!fullName) {
-                await bot.sendMessage(chatId, "Tên không được bỏ trống.");
-                return;
-            }
-
-            if (!["developer", "designer", "content creator"].includes(roleName.toLowerCase())) {
-                await bot.sendMessage(chatId, "Vai trò không hợp lệ. Vui lòng nhập: developer, designer, content creator.");
-                return;
-            }
-
-            if (!phoneRegex.test(phoneNumber)) {
-                await bot.sendMessage(chatId, "Số điện thoại không hợp lệ.");
-                return;
-            }
-
-            if (!emailRegex.test(companyMail)) {
-                await bot.sendMessage(chatId, "Email không hợp lệ.");
-                return;
-            }
-
-            const requestKey = `${chatId}_${companyMail}`;
-            if (registerStatus.has(requestKey)) {
-                await bot.sendMessage(chatId, "Yêu cầu này đã được gửi và đang chờ xử lý.");
-                return;
-            }
-
-            registerStatus.set(requestKey, false); // False = chưa xử lý
-
-            // Gửi yêu cầu tới admin
-            await bot.sendMessage(
-                -4620420034, // ID chat của admin
-                `📌 Yêu cầu đăng ký mới:\n\n` +
-                `👤 Họ tên: ${fullName}\n` +
-                `💼 Vai trò: ${roleName}\n` +
-                `📞 Số điện thoại: ${phoneNumber}\n` +
-                `📧 Email: ${companyMail}\n\n` +
-                `Hãy chọn hành động:`,
-                {
-                    reply_markup: {
-                        inline_keyboard: [
-                            [
-                                { text: "Phê duyệt ✅", callback_data: `approve_register_${chatId}_${fullName}_${roleName}_${phoneNumber}_${companyMail}` },
-                                { text: "Từ chối ❌", callback_data: `reject_register_${chatId}_${fullName}_${roleName}_${phoneNumber}_${companyMail}` }
-                            ]
-                        ]
-                    }
-                }
-            );
-
-            await bot.sendMessage(chatId, "Yêu cầu của bạn đã được gửi. Vui lòng chờ xác nhận từ Admin.");
-
-            bot.off("message", messageListener);
-            await deleteUserSession(chatId);
-        } catch (err) {
-            console.error("Error registering staff:", err);
-            await bot.sendMessage(chatId, "Đã xảy ra lỗi khi đăng ký. Vui lòng thử lại sau.");
-        }
+        bot.off("message", messageListener);
+        // await deleteUserSession(chatId);
     };
 
-    // Lưu trạng thái và lắng nghe tin nhắn
-    await setUserSession(chatId, { command: "registering", listener: messageListener });
-    bot.on("message", messageListener);
-};
-
-export const handleRegisterResponse = async (bot: TelegramBot, action: string, userId: number, email: string, callbackQuery: TelegramBot.CallbackQuery) => {
-    // const requestKey = `${userId}_${email}`;
-    // console.log("Request Key:", requestKey);
-
-    if(!callbackQuery.message) {
-        await bot.answerCallbackQuery(callbackQuery.id, { text: "Dữ liệu callback không hợp lệ." });
+    const companies: Company[] = await getCompanies();
+    if (!companies) {
+        await bot.sendMessage(chatId, "Error fetching companies. Please try again later.");
         return;
     }
 
-    console.log("Callback data nhận được:", callbackQuery.data);    
+    setUserData(chatId, "company", companies[0].id);
+    setUserData(chatId, "companyName", companies[0].name);
+    setUserData(chatId, "userName", userName);
+    
+    const branches: Branch[] = await getBranchesByCompanyId(companies[0].id);
+    if (!branches) {
+        await bot.sendMessage(chatId, "Error fetching branches. Please try again later.");
+        return;
+    }
 
-    // registerStatus.set(requestKey, true);
-    await setUserSession(userId, { command: "register admin response", listener: null });
+    const keyboard = branches.map(branch => ({
+        text: branch.name,
+        callback_data: `register_branch_${branch.id}`,
+    }));
+    
+    await bot.sendMessage(chatId, `Choose your branch:`, {
+        reply_markup: {
+            inline_keyboard: [keyboard],
+        },
+    });
+
+    bot.on("message", messageListener);
+
+    await setUserSession(chatId, { command: "/register", listener: messageListener });
+}
+
+export const handleDepartment = async (bot: TelegramBot, callbackQuery: TelegramBot.CallbackQuery): Promise<void> => {
+    if (!callbackQuery.data) {
+        await bot.answerCallbackQuery(callbackQuery.id, { text: "Invalid request!" });
+        return;
+    } 
+    const chatId = callbackQuery.message?.chat.id;
+    if (!chatId) {
+        await bot.answerCallbackQuery(callbackQuery.id, { text: "Invalid request!" });
+        return;
+    }
+
+    const existingSession = await getUserSession(chatId);
+    if (existingSession?.listener) {
+        bot.off("message", existingSession.listener); // Xóa listener cũ
+    }
+
+    const messageListener = async (response: TelegramBot.Message) => {
+        if (response.chat.id !== chatId) return;
+
+        if (response.text?.trim() === "/cancel") {
+            bot.off("message", messageListener);
+            await deleteUserSession(chatId);
+            // await bot.sendMessage(chatId, "Action canceled.");
+            return;
+        }
+        bot.off("message", messageListener);
+        // await deleteUserSession(chatId);
+    };
+
+    const branchId = callbackQuery.data.split("_")[2];
+    setUserData(chatId, "branchId", branchId);
+
+    const departments: Department[] = await getDepartmentsByBranchId(branchId);
+    const keyboard = [
+        departments.map(department => ({
+            text: `${department.name}`,
+            callback_data: `register_department_${department.id}`
+        }))
+    ];
+
+    await setUserSession(chatId, { command: "ChoosingDepartment" });
+
+    await bot.sendMessage(chatId, `Please choose the department you work for in branch`, {
+        reply_markup: {
+            inline_keyboard: keyboard
+        },
+    });
+}
+
+// await setUserSession(chatId, { command: "registering", departmentId });
+
+export const handleEmail = async (bot: TelegramBot, callbackQuery: TelegramBot.CallbackQuery): Promise<void> => {
+    if (!callbackQuery.data) {
+        await bot.answerCallbackQuery(callbackQuery.id, { text: "Invalid request!" });
+        return;
+    }
+
+    const chatId = callbackQuery.message?.chat.id;
+    if (!chatId) {
+        bot.answerCallbackQuery(callbackQuery.id, { text: "Invalid request!" });
+        return;
+    }
+
+    const existingSession = await getUserSession(chatId);
+    if (existingSession?.listener) {
+        bot.off("message", existingSession.listener); // Xóa listener cũ
+    }
+
+    const departmentId = callbackQuery.data.split("_")[2];
+    setUserData(chatId, "departmentId", departmentId);
+
+    await bot.sendMessage(chatId, `Please enter your Email:`);
+
+    const messageListener = async (response: TelegramBot.Message) => {
+        if (response.chat.id !== chatId) return;
+
+        if (response.text?.trim() === "/cancel") {
+            bot.off("message", messageListener);
+            await deleteUserSession(chatId);
+            
+            // await bot.sendMessage(chatId, "Action canceled.");
+            return;
+        }
+
+        const email = response.text;
+
+        if (email && email.includes("@") && validateEmailCompany(email)) {
+            if (await checkExistStaff(email)) {
+                await bot.sendMessage(chatId, "Email already exists. Please enter another email:");
+            }
+            else {
+                bot.off("message", messageListener);
+                // await deleteUserSession(chatId);
+                setUserData(chatId, "email", email);
+                await setUserSession(chatId, { command: "typingFullName" });
+
+                await bot.sendMessage(chatId, `Email "<b>${email}</b>" accepted. Please enter your full name:`, { parse_mode: "HTML" });
+                await handleFullName(bot, callbackQuery); 
+            }
+        } else {
+            await bot.sendMessage(chatId, "Invalid email. Please enter a valid email:");
+        }
+    };
+
+    await setUserSession(chatId, { command: "typingEmail", listener: messageListener });
+    bot.on("message", messageListener);    
+}
+
+export const handleFullName = async (bot: TelegramBot, callbackQuery: TelegramBot.CallbackQuery): Promise<void> => {
+    const chatId = callbackQuery.message?.chat.id;
+    if (!chatId) {
+        bot.answerCallbackQuery(callbackQuery.id, { text: "Invalid request!" });
+        return;
+    }
+
+    const existingSession = await getUserSession(chatId);
+    if (existingSession?.listener) {
+        bot.off("message", existingSession.listener); // Xóa listener cũ
+    }
+
+    const messageListener = async (response: TelegramBot.Message) => {
+        if (response.chat.id !== chatId) return;
+
+        if (response.text?.trim() === "/cancel") {
+            bot.off("message", messageListener);
+            await deleteUserSession(chatId);
+            // await bot.sendMessage(chatId, "Action canceled.");
+            return;
+        }
+
+        const fullName = response.text;
+
+        if (fullName && fullName.length >= 6 && !/\d/.test(fullName)) {
+            bot.off("message", messageListener);
+            // await deleteUserSession(chatId);
+            setUserData(chatId, "fullName", fullName);
+            await setUserSession(chatId, { command: "typingPhone" });
+
+            // console.log("UserData: ", getUserData(chatId));
+            await bot.sendMessage(chatId, `Full name "<b>${fullName}</b>" accepted. Please enter your phone number:`, { parse_mode: "HTML" });
+            await handlePhone(bot, callbackQuery);
+        } else {
+            bot.sendMessage(chatId, "Invalid full name. Please enter a valid full name:");
+        }
+    };
+
+    await setUserSession(chatId, { command: "typingFullName", listener: messageListener });
+
+    bot.on("message", messageListener);
+};
+
+
+export const handlePhone = async (bot: TelegramBot, callbackQuery: TelegramBot.CallbackQuery): Promise<void> => {
+    const chatId = callbackQuery.message?.chat.id;
+    if (!chatId) {
+        bot.answerCallbackQuery(callbackQuery.id, { text: "Invalid request!" });
+        return;
+    }
+
+    const existingSession = await getUserSession(chatId);
+    if (existingSession?.listener) {
+        bot.off("message", existingSession.listener); // Xóa listener cũ
+    }
+
+    const messageListener = async (response: TelegramBot.Message) => {
+        if (response.chat.id !== chatId) return;
+
+        if (response.text?.trim() === "/cancel") {
+            bot.off("message", messageListener);
+            await deleteUserSession(chatId);
+            // await bot.sendMessage(chatId, "Action canceled.");
+            return;
+        }
+
+        const phone = response.text;
+
+        if (phone && phone.length >= 10 && phone.length <= 11 && !isNaN(Number(phone))) {
+            bot.off("message", messageListener);
+            // await deleteUserSession(chatId);
+            setUserData(chatId, "phone", phone);
+            await setUserSession(chatId, { command: "choosingPosition" });
+
+            await bot.sendMessage(chatId, `Phone number "<b>${phone}</b>" accepted.`, { parse_mode: "HTML" });
+            await handlePosition(bot, callbackQuery);
+        } else {
+            bot.sendMessage(chatId, "Invalid phone number. Please enter a valid phone number:");
+        }
+    }
+    await setUserSession(chatId, { command: "typingPhone", listener: messageListener });
+
+    bot.on("message", messageListener);
+}
+
+export const handlePosition = async (bot: TelegramBot, callbackQuery: TelegramBot.CallbackQuery): Promise<void> => {
+    const chatId = callbackQuery.message?.chat.id;
+    if (!chatId) {
+        bot.answerCallbackQuery(callbackQuery.id, { text: "Invalid request!" });
+        return;
+    }
+
+    const existingSession = await getUserSession(chatId);
+    if (existingSession?.listener) {
+        bot.off("message", existingSession.listener); // Xóa listener cũ
+    }
+
+    const userData = getUserData(chatId);
+    console.log("UserData: ", userData);
+
+    const messageListener = async (response: TelegramBot.Message) => {
+        if (response.chat.id !== chatId) return;
+
+        if (response.text?.trim() === "/cancel") {
+            bot.off("message", messageListener);
+            await deleteUserSession(chatId);
+            // await bot.sendMessage(chatId, "Action canceled.");
+            return;
+        }
+
+        bot.off("message", messageListener);
+        // await deleteUserSession(chatId);
+    }
+    await setUserSession(chatId, { command: "choosingPosition", listener: messageListener });
+
+    bot.on("message", messageListener);
+
+    await bot.sendMessage(chatId, "Please choose your position", {
+        reply_markup: {
+            inline_keyboard: [
+                [
+                    { text: "Developer", callback_data: `register_position_developer` },
+                    { text: "Designer", callback_data: `register_position_designer` },
+                    { text: "Accountant", callback_data: `register_position_accountant` },
+                    { text: "HR", callback_data: `register_position_hr` },
+                ],
+            ],
+        },
+        parse_mode: "HTML",
+    });
+}
+
+export const handleGetMac = async (bot: TelegramBot, callbackQuery: TelegramBot.CallbackQuery): Promise<void> => {
+    const chatId = callbackQuery.message?.chat.id;
+    if (!chatId) {
+        bot.answerCallbackQuery(callbackQuery.id, { text: "Invalid request!" });
+        return;
+    }
+
+    if (!callbackQuery.data) {
+        await bot.answerCallbackQuery(callbackQuery.id, { text: "Invalid request!" });
+        return;
+    }
+
+    const position = callbackQuery.data.split("_")[2];
+    setUserData(chatId, "position", position);
+    
+    const userData = getUserData(chatId);
+    await redisClient.set(`user:${chatId}`, JSON.stringify(userData));
+
+    const test = await redisClient.get(`user:${chatId}`);
+    console.log("Test: ", test);
+
+    const ipServer = getLocalIp();
+    const portServer=process.env.PORT || 3000;
+    const macCaptureUrl = `${ipServer}:${portServer}/capture-mac?chatId=${chatId}`;
+    await bot.sendMessage(
+        chatId,
+        "Please click the link below to register your device and complete your profile:",
+        {
+            reply_markup: {
+                inline_keyboard: [
+                    [
+                        { text: "Register Device", url: macCaptureUrl },
+                    ],
+                ],
+            },
+        }
+    );
+    // await handleAdminRegister(bot, chatId);
+    // await deleteUserSession(chatId);
+}
+
+export const handleRegisterAdmin = async (bot: TelegramBot, type: string, callbackQuery: TelegramBot.CallbackQuery): Promise<void> => {
+    if (!callbackQuery.data) {
+        await bot.answerCallbackQuery(callbackQuery.id, { text: "Invalid request!" });
+        return;
+    }
+
+    console.log("Xem ne cuuuu",callbackQuery.data);
+    const chatId = callbackQuery.data.split("_")[2];
+    console.log("Chat ID: ", chatId);
 
     await bot.editMessageReplyMarkup(
         {
             inline_keyboard: [
                 [
-                    { text: 'Phê duyệt ✅ (Đã xử lý)', callback_data: 'disabled' },
-                    { text: 'Từ chối ❌ (Đã xử lý)', callback_data: 'disabled' }
+                    { text: 'Approve ✅ (Processed)', callback_data: 'disabled' },
+                    { text: 'Reject ❌ (Processed)', callback_data: 'disabled' }
                 ]
             ]
         },
@@ -147,33 +383,21 @@ export const handleRegisterResponse = async (bot: TelegramBot, action: string, u
             chat_id: callbackQuery.message?.chat.id,
             message_id: callbackQuery.message?.message_id
         }
-    ).catch((err) => console.error('Lỗi khi chỉnh sửa nút:', err.message))
+    ).catch((err) => console.error('Error while editing button:', err.message));
+    
+    if (type === 'approve') {
+        await updateStatusStaffByTeleId(chatId, 'approved');
 
-    if (action === 'approve') {
-        console.log("Approve register");
-
-        // const staff: Staff = {
-        //     id: "",
-        //     full_name: "Test1",
-        //     role_name: "developer",
-        //     phone_number: "1231231231",
-        //     company_mail: email,
-        // };
-
-        // console.log("Staff:", staff);
-
-        // await addStaff(staff);
-
-        await bot.sendMessage(userId, `✅ Yêu cầu đăng ký với email ${email} của bạn đã được Admin phê duyệt. 🎉`);
-        await bot.sendMessage(-4620420034, `✅ Bạn đã phê duyệt yêu cầu đăng ký với email ${email}.`);
-    } else if (action === 'reject') {
-        await bot.sendMessage(userId, `❌ Yêu cầu đăng ký với email ${email} của bạn đã bị Admin từ chối. ❌`);
-        await bot.sendMessage(-4620420034, `❌ Bạn đã từ chối yêu cầu đăng ký với email ${email}.`);
-    } else {
-        await bot.answerCallbackQuery(callbackQuery.id, { text: "Hành động không hợp lệ." });
-        return;
+        await bot.sendMessage(chatId, `✅ Your registation request has been approved by Admin. 🎉`);
+        await bot.sendMessage(idAdmin, `✅ You were approved for the registration on the request.`);
     }
+    else if (type === 'reject') {
+        await updateStatusStaffByTeleId(chatId, 'rejected');
 
-    await bot.answerCallbackQuery(callbackQuery.id, { text: "Xử lý thành công!" });
-};
-
+        await bot.sendMessage(chatId, `❌ Your registation request has been approved by Admin.`);
+        await bot.sendMessage(idAdmin, `❌ You were approved for the registration on the request.`);
+    }
+    else {
+        await bot.answerCallbackQuery(callbackQuery.id, { text: "Invalid request!" });
+    }
+}

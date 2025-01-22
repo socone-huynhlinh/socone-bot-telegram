@@ -1,6 +1,6 @@
 // src/middleware/validateMacMiddleware.ts
 import http from "http"
-import { getAllMacAddress } from "../services/admin/device-infor"
+import { getAllMacAddress } from "../services/common/device-infor"
 
 const arp = require("node-arp")
 export const validateMacMiddleware = async (req: http.IncomingMessage, res: http.ServerResponse, next: () => void) => {

@@ -1,7 +1,7 @@
 import http from "http"
 import bot from "../../telegram-bot"
 import { sessionDay } from "../../../utils/session-day"
-import { insertCheckin } from "../../../services/staff/valid-checkin"
+import { insertCheckin } from "../../../services/common/valid-checkin"
 import { getStaffByChatId, getStaffPendingByChatId } from "../../../services/staff/staff-service"
 import Staff, { mapStaffFromJson } from "../../../models/staff"
 import redisClient from "../../../config/redis-client"
@@ -10,71 +10,109 @@ import { deleteUserSession } from "../../../config/user-session"
 
 export const handleCheckinRequest = async (chatId: number, userName: string, action: string, shiftId: string,res: http.ServerResponse) => {
     // Xử lý logic Check-in ở đây
-    res.statusCode = 200
-    res.setHeader("Content-Type", "text/plain; charset=utf-8")
-    res.end(`Check-in thành công cho người dùng ${userName} (Chat ID: ${chatId})`)
-    const { session, lateFormatted, lateTime } = sessionDay();
+    try {
+        const { session, lateFormatted, lateTime } = sessionDay();
 
-    const lateMessage = lateTime > 0 ? `Late: ${lateFormatted}` : '';
+        const lateMessage = lateTime > 0 ? `Late: ${lateFormatted}` : '';
 
-    if (action.split("_")[0] === "checkin" && action.split("_")[1] === "main") {
+        if (action.split("_")[0] === "checkin" && action.split("_")[1] === "main") {
 
-        console.log("0: ", chatId);
+            console.log("0: ", chatId);
 
-        // const account: TelegramAccount | null = await getAccountById(chatId)
-        const staff: Staff | null = await getStaffByChatId(chatId.toString())
-        const jsonStaff = mapStaffFromJson(staff);
+            // const account: TelegramAccount | null = await getAccountById(chatId)
+            const staff: Staff | null = await getStaffByChatId(chatId.toString())
+            const jsonStaff = mapStaffFromJson(staff);
 
-        if (jsonStaff?.id) {
-            await insertCheckin(jsonStaff.id, shiftId, 8);
-            console.log("Telegram Account: ", jsonStaff.tele_account?.username);
-        } else {
-            console.log("Không tìm thấy tài khoản.")
+            if (jsonStaff?.id) {
+                await insertCheckin(jsonStaff.id, shiftId, 8);
+                console.log("Telegram Account: ", jsonStaff.tele_account?.username);
+            } else {
+                console.log("Không tìm thấy tài khoản.")
+            }
+
+            if (lateMessage === '') {
+                bot.sendMessage(
+                    chatId,
+                    `<b>${jsonStaff.tele_account?.username} </b>\nMain shift - ${new Date().toLocaleDateString('vi-VN')}\n- Check: ${session}\n- Mode: Office\n\n<b>Thanks for always being on time, have a nice day ☀️</b>`,
+                    { parse_mode: "HTML" }
+                )
+            }
+            else {
+                bot.sendMessage(
+                    chatId,
+                    `<b>${jsonStaff.tele_account?.username} </b>\nMain shift - ${new Date().toLocaleDateString('vi-VN')}\n- Check: ${session}\n- Mode: Office\n- ${lateMessage}\n\n<b>Have a nice day ☀️</b>`,
+                    { parse_mode: "HTML" }
+                )
+            }
         }
+        else if (action.split("_")[0] === "checkin" && action.split("_")[1] === "special") {
+            console.log("0: ", chatId);
 
-        if (lateMessage === '') {
+            // const account: TelegramAccount | null = await getAccountById(chatId)
+            const staff: Staff | null = await getStaffByChatId(chatId.toString())
+            const jsonStaff = mapStaffFromJson(staff);
+
+            const typeDisplay = {
+                ot: "OT",
+                "time in lieu": "Time in lieu",
+                main: "Main shift special"
+            }[decodeURIComponent(action.split("_")[2])] || "Không xác định";
+
+            const duration = action.split("_")[3];
+
+            console.log("Type Display: ", typeDisplay);
+
+            if (staff?.id) {
+                await insertCheckin(staff.id, shiftId, parseInt(duration));
+            } else {
+                console.log("Không tìm thấy tài khoản.")
+            }
+
             bot.sendMessage(
                 chatId,
-                `<b>${jsonStaff.tele_account?.username} - #dev</b>\nMain shift - ${new Date().toLocaleDateString('vi-VN')}\n- Check: ${session}\n- Mode: Office\n\n<b>Thanks for always being on time, have a nice day ☀️</b>`,
+                `<b>${jsonStaff.tele_account?.username} </b>\n${typeDisplay} - ${new Date().toLocaleDateString('vi-VN')}\n- Check: ${session}\n- Hours: ${action.split("_")[3]} hours\n- Mode: Office\n\n<b>Have a nice work ☀️</b>`,
                 { parse_mode: "HTML" }
             )
         }
-        else {
-            bot.sendMessage(
-                chatId,
-                `<b>${jsonStaff.tele_account?.username} - #dev</b>\nMain shift - ${new Date().toLocaleDateString('vi-VN')}\n- Check: ${session}\n- Mode: Office\n- ${lateMessage}\n\n<b>Have a nice day ☀️</b>`,
-                { parse_mode: "HTML" }
-            )
-        }
-    }
-    else if (action.split("_")[0] === "checkin" && action.split("_")[1] === "special") {
-        console.log("0: ", chatId);
 
-        // const account: TelegramAccount | null = await getAccountById(chatId)
-        const staff: Staff | null = await getStaffByChatId(chatId.toString())
-        const jsonStaff = mapStaffFromJson(staff);
-
-        const typeDisplay = {
-            ot: "OT",
-            "time in lieu": "Time in lieu",
-            main: "Main shift special"
-        }[decodeURIComponent(action.split("_")[2])] || "Không xác định";
-
-        const duration = action.split("_")[3];
-
-        console.log("Type Display: ", typeDisplay);
-
-        if (staff?.id) {
-            await insertCheckin(staff.id, shiftId, parseInt(duration));
-        } else {
-            console.log("Không tìm thấy tài khoản.")
-        }
-
-        bot.sendMessage(
-            chatId,
-            `<b>${jsonStaff.tele_account?.username} - #dev</b>\n${typeDisplay} - ${new Date().toLocaleDateString('vi-VN')}\n- Check: ${session}\n- Hours: ${action.split("_")[3]} hours\n- Mode: Office\n\n<b>Have a nice work ☀️</b>`,
-            { parse_mode: "HTML" }
-        )
+        res.statusCode = 200
+        res.setHeader("Content-Type", "text/plain; charset=utf-8")
+        res.end(`Check-in thành công cho người dùng ${userName} (Chat ID: ${chatId})`)
+        // res.end(`
+        //     "Check-in thành công cho người dùng ${userName} (Chat ID: ${chatId})"
+        // `);
+    } catch (error) {
+        res.statusCode = 500
+        res.end(`Đã xảy ra lỗi: ${error}`)
+        // res.end(`
+        //     <!DOCTYPE html>
+        //     <html lang="en">
+        //     <head>
+        //         <meta charset="UTF-8">
+        //         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        //         <title>Registration Failed</title>
+        //         <style>
+        //             body {
+        //                 font-family: Arial, sans-serif;
+        //                 text-align: center;
+        //                 margin-top: 50px;
+        //             }
+        //             h1 {
+        //                 color: #EF0000FF;
+        //             }
+        //             p {
+        //                 font-size: 18px;
+        //                 color: #555;
+        //             }
+        //         </style>
+        //     </head>
+        //     <body>
+        //         <h1>Checkin Failed!</h1>
+        //         <p>${error}</p>
+        //     </body>
+        //     </html>
+        // `);
+        return;
     }
 }
 
@@ -137,9 +175,11 @@ export const handleGetMacRequest = async (chatId: number, res: http.ServerRespon
                 `Your registration request has been sent successfully. Please wait for the admin to approve.`,
             );
 
+            const idAdmin = process.env.ID_GROUP_OFF || "";
+
             // Gửi thông báo cho Admin
             await bot.sendMessage(
-                -4620420034, 
+                idAdmin, 
                 `<b>Register request from</b>: ${user['userName']}\n<b> - Company:</b> ${user['companyName']}\n<b> - Branch:</b> ${staffSend.department?.branch?.name}\n<b> - Department:</b> ${staffSend.department?.name}\n<b> - Email:</b> ${user['email']}\n<b> - Full name:</b> ${user['fullName']}\n<b> - Phone:</b> ${user['phone']}\n<b> - Position:</b> ${user['position']}
                 `,
                 {

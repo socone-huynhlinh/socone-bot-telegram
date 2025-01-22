@@ -1,11 +1,13 @@
 import TelegramBot from "node-telegram-bot-api"
-import { isValidCheckin } from "../../../services/staff/valid-checkin"
+import { isValidCheckin } from "../../../services/common/valid-checkin"
 import { getWorkShiftByType, getWorkShiftByTypeAndName } from '../../../services/common/work-shift-service';
 import isOutOfWorkingHours from "../../../utils/workingHours";
 import Staff, { mapStaffFromJson } from "../../../models/staff";
 import { getStaffByChatId } from "../../../services/staff/staff-service";
 import { deleteUserSession, getUserSession, setUserSession } from "../../../config/user-session";
 import getLocalIp from "../../../utils/get-ip-address";
+import { deleteUserData, getUserData, setUserData } from "../../../config/user-data";
+import { addReportByStaffId } from "../../../services/common/report-service";
 
 export const handleCheckin = async (bot: TelegramBot, msg: TelegramBot.Message) => {
     const chatId = msg.chat.id;
@@ -24,9 +26,13 @@ export const handleCheckin = async (bot: TelegramBot, msg: TelegramBot.Message) 
     }
 
     const staff: Staff | null = await getStaffByChatId(chatId.toString());
+    console.log("Staff: ", staff?.id);
+    setUserData(chatId, "staffId", staff?.id)
+
     if (!staff) {
-        bot.sendMessage(chatId, "You have not registered yet. Please register an account to use this feature.");
+        bot.sendMessage(chatId, "You have not registered yet. Please use /register to register an account to use this feature.");
         await deleteUserSession(chatId);
+        deleteUserData(chatId);
         return;
     }
 
@@ -57,7 +63,7 @@ export const handleCheckin = async (bot: TelegramBot, msg: TelegramBot.Message) 
 
     await setUserSession(chatId, { command: "/checkin", listener: messageListener });
 
-    if (isOutOfWorkingHours()) {
+    if (!isOutOfWorkingHours()) {
         await handleCheckinSpecial(bot, chatId);
     }
     else if (jsonStaff?.type_staff === "parttime") {
@@ -77,12 +83,18 @@ export const handleCheckinMain = async (bot: TelegramBot, chatId: number, userNa
         return;
     }
 
+    const shiftId = shift[0].id
+    if (!shiftId) {
+        bot.sendMessage(chatId, "Unable to retrieve shift information.");
+        return;
+    }
+
     console.log(`Yêu cầu Check-in ca chính từ: ${userName}`);
 
     const ipServer = getLocalIp();
     const portServer = process.env.PORT_SERVER || 3000;
-    const checkinUrl = `http://${ipServer}:${portServer}/check-device?chatId=${chatId}&userName=${encodeURIComponent(userName)}&action=checkin_main&shiftId=${shift[0].id}`;
-    await bot.sendMessage(chatId, "<b>Please click the button below to check-in.</b>", {
+    const checkinUrl = `http://${ipServer}:${portServer}/check-device?chatId=${chatId}&userName=${encodeURIComponent(userName)}&action=checkin_main&shiftId=${shiftId}`;
+    await bot.sendMessage(chatId, "Please click the button below to check-in.", {
         reply_markup: {
             inline_keyboard: [
                 [
@@ -92,7 +104,9 @@ export const handleCheckinMain = async (bot: TelegramBot, chatId: number, userNa
         },
         parse_mode: "HTML",
     });
-    await deleteUserSession(chatId);
+    // await deleteUserSession(chatId);
+
+    await handleReportCheckin(bot, chatId, userName, shiftId);
 };
 
 export const handleCheckinSpecial = async (bot: TelegramBot, chatId: number) => {
@@ -114,7 +128,7 @@ export const handleCheckinSpecial = async (bot: TelegramBot, chatId: number) => 
             // await deleteUserSession(chatId);
         };
 
-    await bot.sendMessage(chatId, "<b>Please select your special shift type</b>", {
+    await bot.sendMessage(chatId, "Please select your special shift type", {
         reply_markup: {
             inline_keyboard: [
                 [
@@ -163,7 +177,7 @@ export const handleSpecialDurationPartTime = async (bot: TelegramBot, chatId: nu
         inlineKeyboard.push(row);
     }
 
-    await bot.sendMessage(chatId, "<b>Please select your working hours</b>", {
+    await bot.sendMessage(chatId, "Please select your working hours", {
         reply_markup: {
             inline_keyboard: inlineKeyboard
         },
@@ -222,7 +236,7 @@ export const handleSpecialDuration = async (
     }
     inlineKeyboard.push(row); 
 
-    await bot.sendMessage(chatId, "<b>Please select your working hours</b>", {
+    await bot.sendMessage(chatId, "Please select your working hours", {
         reply_markup: {
             inline_keyboard: inlineKeyboard
         },
@@ -243,6 +257,11 @@ export const handleSpecialTimeSelection = async (bot: TelegramBot, chatId: numbe
         return;
     }
 
+    if (!shift.id) {
+        bot.sendMessage(chatId, "Unable to retrieve shift information.");
+        return;
+    }
+
     // in ra type, userId, time để kiểm tra
     console.log(`type: ${nameType}, userId: ${userId}, duration: ${duration}, shiftId: ${shift.id}`);
 
@@ -255,7 +274,7 @@ export const handleSpecialTimeSelection = async (bot: TelegramBot, chatId: numbe
     const portServer = process.env.PORT_SERVER || 3000;
 
     const checkinUrl = `http://${ipServer}:${portServer}/check-device?chatId=${chatId}&userName=${encodeURIComponent(userName)}&action=checkin_special_${nameType}_${duration}&shiftId=${shift.id}`;
-    await bot.sendMessage(chatId, "<b>Please click the button below to check-in.</b>", {
+    await bot.sendMessage(chatId, "Please click the button below to check-in.", {
         reply_markup: {
             inline_keyboard: [
                 [
@@ -266,5 +285,58 @@ export const handleSpecialTimeSelection = async (bot: TelegramBot, chatId: numbe
         parse_mode: "HTML",
     });
 
-    await deleteUserSession(chatId);
+    // await deleteUserSession(chatId);
+    await handleReportCheckin(bot, chatId, userName, shift.id);
 }
+
+export const handleReportCheckin = async (bot: TelegramBot, chatId: number, userName: string, shiftId: string) => {
+    await bot.sendMessage(chatId, "Please report your planned work for today (at least 6 characters).", {
+        parse_mode: "HTML",
+    });
+
+    const staffId = getUserData(chatId)?.staffId;
+    if (!staffId) {
+        await bot.sendMessage(chatId, "Error: Unable to find your staff ID. Please try again later.");
+        return;
+    }
+
+    const messageListener = async (response: TelegramBot.Message) => {
+        if (response.chat.id !== chatId) return;
+
+        if (response.text?.trim() === "/cancel") {
+            bot.off("message", messageListener);
+            await deleteUserSession(chatId);
+            // await bot.sendMessage(chatId, "You have canceled the action.");
+            deleteUserData(chatId);
+            return;
+        }
+
+        const workReport = response.text?.trim();
+
+        if (!workReport || workReport.length < 6) {
+            await bot.sendMessage(
+                chatId,
+                "Your report is too short. Please provide a detailed report (at least 6 characters).",
+                { parse_mode: "HTML" }
+            );
+            return;
+        }
+
+        console.log(`User ${userName} reported work for shift ${shiftId}: ${workReport}`);
+
+        await addReportByStaffId(staffId, workReport);
+
+        await bot.sendMessage(
+            chatId,
+            `Thank you, <b>${userName}</b>. Your work report has been submitted successfully.`,
+            { parse_mode: "HTML" }
+        );
+
+        bot.off("message", messageListener);
+        await deleteUserSession(chatId); 
+        // deleteUserData(chatId);
+    };
+
+    await setUserSession(chatId, { command: "reportingWork", listener: messageListener });
+    bot.on("message", messageListener);
+};

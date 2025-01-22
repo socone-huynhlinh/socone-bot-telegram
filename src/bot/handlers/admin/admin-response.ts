@@ -1,7 +1,7 @@
 import TelegramBot from "node-telegram-bot-api";
 import { handleCheckinMain, handleCheckinSpecial, handleSpecialDuration, handleSpecialTimeSelection } from "../checkin/checkin";
 import { handleOffStartTime, handleOffAdmin, handleOffResponse, handleSelectedStartTime, handleRequestOffSelection } from "../request-off/request-off";
-import { handleDepartment, handleEmail, handleFullName, handleGetMac, handleRegisterAdmin } from "../register/register-test";
+import { handleDepartment, handleEmail, handleFullName, handleGetMac, handleRegisterAdmin } from "../register/register";
 
 export const handleAdminResponse = async (bot: TelegramBot) => {
     bot.on("callback_query", async (callbackQuery) => {
