@@ -52,7 +52,7 @@ export const handleCheckin = async (bot: TelegramBot, msg: TelegramBot.Message) 
         if (response.text?.trim() === "/cancel") {
             bot.off("message", messageListener);
             await deleteUserSession(chatId);
-            // await bot.sendMessage(chatId, "✅ You have canceled the current action.");
+            await bot.sendMessage(chatId, "✅ You have canceled the current action.");
             return;
         }
         bot.off("message", messageListener);
@@ -106,7 +106,7 @@ export const handleCheckinMain = async (bot: TelegramBot, chatId: number, userNa
     });
     // await deleteUserSession(chatId);
 
-    await handleReportCheckin(bot, chatId, userName, shiftId);
+    // await handleReportCheckin(bot, chatId, userName, shiftId);
 };
 
 export const handleCheckinSpecial = async (bot: TelegramBot, chatId: number) => {
@@ -286,7 +286,7 @@ export const handleSpecialTimeSelection = async (bot: TelegramBot, chatId: numbe
     });
 
     // await deleteUserSession(chatId);
-    await handleReportCheckin(bot, chatId, userName, shift.id);
+    // await handleReportCheckin(bot, chatId, userName, shift.id);
 }
 
 export const handleReportCheckin = async (bot: TelegramBot, chatId: number, userName: string, shiftId: string) => {

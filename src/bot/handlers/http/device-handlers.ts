@@ -7,6 +7,8 @@ import Staff, { mapStaffFromJson } from "../../../models/staff"
 import redisClient from "../../../config/redis-client"
 import { addStaff } from "../../../services/admin/staff-manage"
 import { deleteUserSession } from "../../../config/user-session"
+import { handleReportCheckin } from "../checkin/checkin"
+import { deleteUserData } from "../../../config/user-data"
 
 export const handleCheckinRequest = async (chatId: number, userName: string, action: string, shiftId: string,res: http.ServerResponse) => {
     // Xử lý logic Check-in ở đây
@@ -74,6 +76,9 @@ export const handleCheckinRequest = async (chatId: number, userName: string, act
                 { parse_mode: "HTML" }
             )
         }
+
+        await handleReportCheckin(bot, chatId, userName, shiftId);
+        deleteUserData(chatId);
 
         res.statusCode = 200
         res.setHeader("Content-Type", "text/plain; charset=utf-8")

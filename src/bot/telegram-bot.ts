@@ -30,9 +30,9 @@ bot.on("message", async (msg) => {
                 bot.off("message", session.listener)
             }
             await deleteUserSession(chatId); // Xóa trạng thái
-            await bot.sendMessage(chatId, "You have canceled the current action.");
+            // await bot.sendMessage(chatId, "You have canceled the current action.");
         } else {
-            await bot.sendMessage(chatId, "There is no action to cancel.");
+            // await bot.sendMessage(chatId, "There is no action to cancel.");
         }
         return
     }

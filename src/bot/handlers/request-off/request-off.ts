@@ -347,6 +347,9 @@ export const handleOffResponse = async (bot: TelegramBot, userId: number, offDat
 
     const offReason = await getOffReasonbyId(idOffDay);
 
+    const [day, month, year] = offDate.split("/"); 
+    const newOffDate = `${month}/${day}/${year}`;
+
     await updateOffRequest(
         idOffDay,
         offDate,
@@ -369,7 +372,7 @@ export const handleOffResponse = async (bot: TelegramBot, userId: number, offDat
     await bot.sendMessage(
         userId,
         `📋 <b>Your time-off request has been submitted with the following information:</b>\n` +
-            `      - <b>Day off:</b> ${offDate}\n` +
+            `      - <b>Day off:</b> ${newOffDate}\n` +
             `      - <b>Start time:</b> ${startTime}\n` +
             `      - <b>End time:</b> ${endTime}\n` +
             `      - <b>Reason:</b> ${offReason}\n\n` +
@@ -381,7 +384,7 @@ export const handleOffResponse = async (bot: TelegramBot, userId: number, offDat
 
     await bot.sendMessage(
         idAdmin, 
-        `<b>Time-off request from:</b> ${userName}\n - Day off: ${offDate}\n - Start time: ${startTime}\n - Hours: ${hour}h\n - Reason: ${offReason}`,
+        `<b>Time-off request from:</b> ${userName}\n - Day off: ${newOffDate}\n - Start time: ${startTime}\n - Hours: ${hour}h\n - Reason: ${offReason}`,
         {
             reply_markup: {
                 inline_keyboard: [
@@ -437,6 +440,9 @@ export const handleOffAdmin = async (
     // console.log("WorkOffDay duration_hour: ", workOffDay.duration_hour);
     // console.log("WorkOffDay description: ", workOffDay.reason);
 
+    const [day, month, year] = offDate.split("/"); 
+    const newOffDate = `${month}/${day}/${year}`;
+
     if (type === "approve") {
         await updateOffRequest(
             idOffDay,
@@ -446,8 +452,8 @@ export const handleOffAdmin = async (
             "approved",
         );
 
-        await bot.sendMessage(userId, `✅ Your request-off for <b>${offDate}</b> has been approved by Admin. 🎉`, { parse_mode : 'HTML' });
-        await bot.sendMessage(idAdmin, `✅ You were approved for the request-off on the request <b>${offDate}</b>.`, { parse_mode : 'HTML' });
+        await bot.sendMessage(userId, `✅ Your request-off for <b>${newOffDate}</b> has been approved by Admin. 🎉`, { parse_mode : 'HTML' });
+        await bot.sendMessage(idAdmin, `✅ You were approved for the request-off on the request <b>${newOffDate}</b>.`, { parse_mode : 'HTML' });
     } else {
         await updateOffRequest(
             idOffDay,
@@ -456,8 +462,8 @@ export const handleOffAdmin = async (
             parseInt(hour),
             "rejected",
         );
-        await bot.sendMessage(userId, `❌ Your request-off for ${offDate} has been rejected by Admin. ❌`);
-        await bot.sendMessage(idAdmin, `❌ Your request-off for ${offDate} has been rejected by Admin.`);
+        await bot.sendMessage(userId, `❌ Your request-off for ${newOffDate} has been rejected by Admin. ❌`);
+        await bot.sendMessage(idAdmin, `❌ Your request-off for ${newOffDate} has been rejected by Admin.`);
     }
 
     await bot.answerCallbackQuery(callbackQuery.id, { text: "Request processed!" });
