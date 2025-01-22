@@ -6,15 +6,16 @@ dotenv.config()
 import http from "http"
 import url from "url"
 import "./bot/telegram-bot" // Đảm bảo bot được khởi động khi server chạy
-import { handleCheckinRequest, handleCheckoutRequest } from "./bot/handlers/device-handlers"
+import { handleCheckinRequest, handleGetMacRequest } from "./bot/handlers/http/device-handlers"
 import { validateMacMiddleware } from "./middleware/check-ip-address"
+import { captureMacMiddleware } from "./middleware/capture-mac-address"
 const PORT = process.env.PORT || 3000
 
 // Định nghĩa các route và middleware tương ứng
 interface Route {
     path: string
     method: string
-    handler: (query: { chatId?: string; userName?: string; action?: string, shiftId?: string }, res: http.ServerResponse) => void
+    handler: (query: { chatId?: string; userName?: string; action?: string, shiftId?: string }, res: http.ServerResponse, req: http.IncomingMessage) => void
     middleware?: Array<(req: http.IncomingMessage, res: http.ServerResponse, next: () => void) => void>
 }
 
@@ -22,7 +23,7 @@ const routes: Route[] = [
     {
         path: "/check-device",
         method: "GET",
-        handler: (query, res) => {
+        handler: (query, res, req) => {
             const { chatId, userName, action, shiftId } = query
             if (!chatId || !userName || !action || !shiftId) {
                 res.statusCode = 400
@@ -31,8 +32,6 @@ const routes: Route[] = [
             }
             if (action.split("_")[0] === "checkin") {
                 handleCheckinRequest(parseInt(chatId as string), userName as string, action as string, shiftId as string, res)
-            } else if (action === "checkout") {
-                handleCheckoutRequest(chatId as string, userName as string, action as string, res)
             } else {
                 res.statusCode = 400
                 res.end("Hành động không hợp lệ.")
@@ -41,26 +40,19 @@ const routes: Route[] = [
         middleware: [validateMacMiddleware],
     },
     {
-        path: "/check-remote",
+        path: "/capture-mac",
         method: "GET",
-        handler: (query, res) => {
-            const { chatId, userName, action, shiftId } = query
-            if (!chatId || !userName || !action || !shiftId) {
+        handler: (query, res, req) => {
+            const chatId = query.chatId
+            if (!chatId || isNaN(Number(chatId))) {
                 res.statusCode = 400
                 res.end("Thiếu tham số cần thiết.")
                 return
             }
-            if (action === "checkinRemote") {
-                handleCheckinRequest(parseInt(chatId as string), userName as string, action as string, shiftId as string, res)
-            } else if (action === "checkoutRemote") {
-                handleCheckoutRequest(chatId as string, userName as string, action as string, res)
-            } else {
-                res.statusCode = 400
-                res.end("Hành động không hợp lệ.")
-            }
+            handleGetMacRequest(parseInt(chatId as string), res, req)
         },
+        middleware: [captureMacMiddleware],
     }
-    // Bạn có thể thêm các route khác ở đây nếu cần
 ]
 
 // Tạo server
@@ -81,7 +73,7 @@ const server = http.createServer((req, res) => {
                 const middleware = middlewares[index++]
                 middleware(req, res, next)
             } else {
-                route.handler(parsedUrl.query, res)
+                route.handler(parsedUrl.query, res, req)
             }
         }
 

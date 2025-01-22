@@ -1,8 +1,7 @@
 import TelegramBot from "node-telegram-bot-api";
 import { handleCheckinMain, handleCheckinSpecial, handleSpecialDuration, handleSpecialTimeSelection } from "../checkin/checkin";
-import { handleOffStartTime, handleOffAdmin, handleOffResponse, handleSelectedStartTime } from "../request-off/request-off";
-import { handleRegisterResponse } from "../register/register";
-import { handleDepartment } from "../register/register-test";
+import { handleOffStartTime, handleOffAdmin, handleOffResponse, handleSelectedStartTime, handleRequestOffSelection } from "../request-off/request-off";
+import { handleDepartment, handleEmail, handleFullName, handleGetMac, handleRegisterAdmin } from "../register/register-test";
 
 export const handleAdminResponse = async (bot: TelegramBot) => {
     bot.on("callback_query", async (callbackQuery) => {
@@ -40,7 +39,10 @@ export const handleAdminResponse = async (bot: TelegramBot) => {
             else if (action === "off") {
                 const [action, type, userChatId, offDate, startTime, hour, idOffDay] = data.split('_');
                 console.log(`Action: ${action}, Type: ${type}, UserChatId: ${userChatId}, Detail: ${offDate}, StartTime: ${startTime}, Hour: ${hour}, IDOffDay: ${idOffDay}`);
-                if (type === "hourly") {
+                if (type === "full" || type === "morning" || type === "afternoon") {
+                    await handleRequestOffSelection(bot, callbackQuery);
+                }
+                else if (type === "hourly") {
                     await handleOffStartTime(bot, userId, idOffDay, callbackQuery);
                 } 
                 else if (type === "startTime") {
@@ -59,6 +61,17 @@ export const handleAdminResponse = async (bot: TelegramBot) => {
                 console.log("Register response:");
                 if (type === "branch") {
                     await handleDepartment(bot, callbackQuery);
+                }
+                else if (type === "department") {
+                    console.log("Department response:");
+                    await handleEmail(bot, callbackQuery);
+                }
+                else if (type === "position") {
+                    console.log("Position response:");
+                    await handleGetMac(bot, callbackQuery);
+                }
+                else if (type === "approve" || type === "reject") {
+                    await handleRegisterAdmin(bot, type, callbackQuery);
                 }
             } 
 

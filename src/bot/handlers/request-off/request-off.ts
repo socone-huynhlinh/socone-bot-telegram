@@ -4,8 +4,9 @@ import { isExistDate, isFutureDate, isExpiredRequestOffDate } from "../../../uti
 import { deleteUserSession, getUserSession, setUserSession } from "../../../config/user-session";
 import Staff from "../../../models/staff";
 import { getStaffByChatId } from "../../../services/staff/staff-service";
+import { DateTime } from 'luxon';
+import { calculateOffDay } from "../../../utils/offDay";
 
-// Hàm xử lý yêu cầu nghỉ phép
 export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Message) => {
     const chatId = msg.chat.id;
     const userName = `${msg.from?.first_name || ""} ${msg.from?.last_name || ""}`.trim();
@@ -14,14 +15,13 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
 
     const existingSession = await getUserSession(chatId);
     if (existingSession?.listener) {
-        console.log("Listener is existing");
         bot.off("message", existingSession.listener);
-        await deleteUserSession(chatId);
     }
 
     const staff: Staff | null = await getStaffByChatId(chatId.toString())
     if (!staff) {
         bot.sendMessage(chatId, "You have not registered yet. Please register an account to use this feature.");
+        await deleteUserSession(chatId);
         return;
     }
     
@@ -36,7 +36,7 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
         if (response.text?.trim() === "/cancel") {
             bot.off("message", messageListener);
             await deleteUserSession(chatId);
-            // await bot.sendMessage(chatId, "✅ Bạn đã hủy thao tác hiện tại.");
+            // await bot.sendMessage(chatId, "Action canceled.");
             return;
         }
 
@@ -97,8 +97,8 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
                 reply_markup: {
                     inline_keyboard: [
                         [
-                            { text: "Full day", callback_data: `off_full_${chatId}_${offDate}_8:00_8_${idOffDay}` },
-                            { text: "Morning", callback_data: `off_morning_${chatId}_${offDate}_8:00_4_${idOffDay}` },
+                            { text: "Full day", callback_data: `off_full_${chatId}_${offDate}_08:00_8_${idOffDay}` },
+                            { text: "Morning", callback_data: `off_morning_${chatId}_${offDate}_08:00_4_${idOffDay}` },
                             { text: "Afternoon", callback_data: `off_afternoon_${chatId}_${offDate}_13:30_4_${idOffDay}` },
                         ],
                         [
@@ -110,11 +110,61 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
         );
 
         bot.off("message", messageListener);
-        await deleteUserSession(chatId);
+        // await deleteUserSession(chatId);
     };    
-    await setUserSession(chatId, { command: "requestingOff", listener: messageListener });
 
+    await setUserSession(chatId, { command: "/off", listener: messageListener });
     bot.on("message", messageListener);
+};
+
+export const handleRequestOffSelection = async (
+    bot: TelegramBot,
+    callbackQuery: TelegramBot.CallbackQuery
+) => {
+    if (!callbackQuery.data) {
+        await bot.answerCallbackQuery(callbackQuery.id, { text: "Invalid request!" });
+        return;
+    }
+
+    const chatId = callbackQuery.message?.chat.id;
+    if (!chatId) {
+        await bot.answerCallbackQuery(callbackQuery.id, { text: "Invalid request!" });
+        return;
+    }
+
+    const [action, type, userId, offDate, startTime, duration, idOffDay] = callbackQuery.data.split("_");
+
+    console.log("Off date:", offDate);
+    console.log("Start time:", startTime);
+
+    const currentDate = new Date();
+    const currentDateTime = DateTime.fromJSDate(currentDate, { zone: "Asia/Ho_Chi_Minh" }).toFormat("yyyy-MM-dd HH:mm:ss.SSSZZ");
+    
+    const offDateSelected = calculateOffDay(offDate, startTime);
+
+    console.log("Current date time:", currentDateTime);
+    console.log("Selected date time:", offDateSelected);
+
+    if (offDateSelected <= currentDateTime) {
+        await bot.answerCallbackQuery(callbackQuery.id, { text: "Invalid start time! The selected time has already passed." });
+        return;
+    }
+
+    if (type === "full") {
+        await bot.answerCallbackQuery(callbackQuery.id, { text: "You selected Full Day." });
+    } else if (type === "morning") {
+        await bot.answerCallbackQuery(callbackQuery.id, { text: "You selected Morning." });
+    } else if (type === "afternoon") {
+        await bot.sendMessage(chatId, "You selected Afternoon.");
+        await bot.answerCallbackQuery(callbackQuery.id, { text: "You selected Afternoon." });
+    } else {
+        await bot.answerCallbackQuery(callbackQuery.id, { text: "Invalid selection." });
+    }
+
+    await bot.answerCallbackQuery(callbackQuery.id, { text: "Processing your selection..." });
+
+    // Tiến hành xử lý tiếp theo
+    await handleOffResponse(bot, parseInt(userId), offDate, startTime, duration, idOffDay, callbackQuery);
 };
 
 export const handleOffStartTime = async (
@@ -128,9 +178,27 @@ export const handleOffStartTime = async (
         return;
     }
 
+    const existingSession = await getUserSession(userId);
+    if (existingSession?.listener) {
+        bot.off("message", existingSession.listener); // Xóa listener cũ
+    }
+
+    const messageListener = async (response: TelegramBot.Message) => {
+            if (response.chat.id !== userId) return;
+    
+            if (response.text?.trim() === "/cancel") {
+                bot.off("message", messageListener);
+                await deleteUserSession(userId);
+                // await bot.sendMessage(chatId, "Action canceled.");
+                return;
+            }
+            bot.off("message", messageListener);
+            // await deleteUserSession(chatId);
+        };
+
     const offDate = callbackQuery.data?.split("_")[3];
 
-    const morningTimes = ["8:00", "9:00", "10:00", "11:00"];
+    const morningTimes = ["08:00", "09:00", "10:00", "11:00"];
     const afternoonTimes = ["13:30", "14:30", "15:30", "16:30"];
 
     const buttons = [
@@ -144,8 +212,6 @@ export const handleOffStartTime = async (
         })),
     ];
 
-    await setUserSession(userId, { command: "choosingStartTime" });
-
     await bot.sendMessage(
         userId,
         "Please select your start time for time off",
@@ -155,6 +221,8 @@ export const handleOffStartTime = async (
             },
         }
     );
+
+    await setUserSession(userId, { command: "choosingStartTime", listener: messageListener });
 };
 
 export const handleSelectedStartTime = async (
@@ -165,31 +233,72 @@ export const handleSelectedStartTime = async (
     idOffDay: string,
     callbackQuery: TelegramBot.CallbackQuery
 ) => {
-    const [hour, minute] = startTime.split(":").map(Number);
+    const existingSession = await getUserSession(userId);
+    if (existingSession?.listener) {
+        bot.off("message", existingSession.listener); // Xóa listener cũ
+    }
 
-    const now = new Date();
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
+    const messageListener = async (response: TelegramBot.Message) => {
+            if (response.chat.id !== userId) return;
+    
+            if (response.text?.trim() === "/cancel") {
+                bot.off("message", messageListener);
+                await deleteUserSession(userId);
+                // await bot.sendMessage(chatId, "Action canceled.");
+                return;
+            }
+            bot.off("message", messageListener);
+            // await deleteUserSession(chatId);
+        };
 
-    console.log("Selected time:", hour, minute);
-    console.log("Current time:", currentHour, currentMinute);
+    // const [offDay, offMonth, offYear] = offDate.split("/").map(Number);
+    // const offDateString = `${offYear}-${offMonth}-${offDay}`;
 
-    if (hour < currentHour || (hour === currentHour && minute < currentMinute)) {
-        await bot.answerCallbackQuery(callbackQuery.id, { text: "Invalid start time!" });
+    // const timeZone = "Asia/Ho_Chi_Minh";
+    // const offDateLocal = toZonedTime(new Date(offDateString), timeZone);
+
+    const [startHour, startMinute] = startTime.split(":").map(Number);
+    // const currentDate = new Date();
+    
+    // const currentDateLocal = toZonedTime(currentDate, timeZone);
+    
+    // console.log("Current time:", currentDateLocal);
+    // console.log("Selected time:", offDateLocal);
+
+    // if (offDateLocal < currentDateLocal) {
+    //     await bot.answerCallbackQuery(callbackQuery.id, { text: "Invalid date! The selected date is in the past." });
+    //     return;
+    // }
+
+    // if (startHour < currentDateLocal.getHours() || (startHour === currentDateLocal.getHours() && startMinute < currentDateLocal.getMinutes())) {
+    //     await bot.answerCallbackQuery(callbackQuery.id, { text: "Invalid start time! The selected time has already passed." });
+    //     return;
+    // }
+
+    const currentDate = new Date();
+    const currentDateTime = DateTime.fromJSDate(currentDate, { zone: "Asia/Ho_Chi_Minh" }).toFormat("yyyy-MM-dd HH:mm:ss.SSSZZ");
+    
+    const offDateSelected = calculateOffDay(offDate, startTime);
+
+    console.log("Current date time:", currentDateTime);
+    console.log("Selected date time:", offDateSelected);
+
+    if (offDateSelected <= currentDateTime) {
+        await bot.answerCallbackQuery(callbackQuery.id, { text: "Invalid start time! The selected time has already passed." });
         return;
     }
 
     let maxDuration = 0;
-    if (hour >= 8 && hour < 12) {
-        maxDuration = Math.min(12 - hour, 3);
-    } else if (hour >= 13 && hour < 16) {
-        maxDuration = Math.min(17 - hour, 3);
-    } else if (hour === 11 || hour === 16) {
+    if (startHour >= 8 && startHour < 12) {
+        maxDuration = Math.min(12 - startHour, 3);
+    } else if (startHour >= 13 && startHour < 16) {
+        maxDuration = Math.min(17 - startHour, 3);
+    } else if (startHour === 11 || startHour === 16) {
         maxDuration = 1; 
     }
 
     // userSessions.set(userId, { command: "choosingDuration" });
-    await setUserSession(userId, { command: "choosingDuration" });
+    await setUserSession(userId, { command: "choosingDuration", listener: messageListener });
 
     await handleOffHourlySelection(bot, userId, offDate, startTime,idOffDay, maxDuration);
     await bot.answerCallbackQuery(callbackQuery.id, { text: "Please select the number of hours for your time off"});
@@ -203,6 +312,24 @@ export const handleOffHourlySelection = async (
     idOffDay: string,
     maxDuration: number,
 ) => {
+    const existingSession = await getUserSession(userId);
+    if (existingSession?.listener) {
+        bot.off("message", existingSession.listener); // Xóa listener cũ
+    }
+
+    const messageListener = async (response: TelegramBot.Message) => {
+            if (response.chat.id !== userId) return;
+    
+            if (response.text?.trim() === "/cancel") {
+                bot.off("message", messageListener);
+                await deleteUserSession(userId);
+                // await bot.sendMessage(chatId, "Action canceled.");
+                return;
+            }
+            bot.off("message", messageListener);
+            // await deleteUserSession(chatId);
+        };
+
     try {
         const buttons = [];
         for (let i = 1; i <= maxDuration; i++) {
@@ -212,7 +339,7 @@ export const handleOffHourlySelection = async (
             });
         }
 
-        await setUserSession(userId, { command: "waitingResponse" });
+        await setUserSession(userId, { command: "waitingResponse", listener: messageListener });
 
         await bot.sendMessage(
             userId,
@@ -259,9 +386,6 @@ export const handleOffResponse = async (bot: TelegramBot, userId: number, offDat
         endTime = `${endHour}:${startMinute.toString().padStart(2, "0")}`;
     }
 
-    // userSessions.delete(userId);
-    await deleteUserSession(userId);
-        
     await bot.sendMessage(
         userId,
         `📋 <b>Your time-off request has been submitted with the following information:</b>\n` +
@@ -290,6 +414,8 @@ export const handleOffResponse = async (bot: TelegramBot, userId: number, offDat
             parse_mode: "HTML",
         }
     );
+
+    await deleteUserSession(userId);
 };
 
 export const handleOffAdmin = async (
@@ -302,9 +428,6 @@ export const handleOffAdmin = async (
     idOffDay: string,
     callbackQuery: TelegramBot.CallbackQuery
 ) => {
-
-    // console.log("Last callback: ", callbackQuery);
-    // console.log("Cần truy vấn: ", callbackQuery.data);
 
     if (isExpiredRequestOffDate(offDate)){
         await bot.answerCallbackQuery(callbackQuery.id, { text: "This leave application is overdue!" });
@@ -326,29 +449,13 @@ export const handleOffAdmin = async (
         }
     ).catch((err) => console.error('Error while editing button:', err.message));
 
-    // const account: TelegramAccount | null = await getAccountById(userId);
-
-    // if (!account) {
-    //     bot.sendMessage(userId, "Account not found in the system.");
-    //     return;
-    // }
-
-    // off_approve_7986019982_09/01/2025_12h00_1
-    // action = off, type = approve, userId = 7986019982, detail = 09/01/2025, subdetail1 = 12h00, subdetail2 = 1
-    // Đã có action, userId, detail
-    // Cần thay đổi
-    // type = approved, rejected, pending
-    // start_time = offDate + startTime
-
-    // console.log(account.staff_id);
-
-    const workOffDay = await getOffRequestById(idOffDay);
-    console.log("WorkOffDay id: ", workOffDay.id);
-    console.log("WorkOffDay staff_id: ", workOffDay.staff_id);
-    console.log("WorkOffDay status: ", workOffDay.status);
-    console.log("WorkOffDay start_time: ", workOffDay.start_time);
-    console.log("WorkOffDay duration_hour: ", workOffDay.duration_hour);
-    console.log("WorkOffDay description: ", workOffDay.reason);
+    // const workOffDay = await getOffRequestById(idOffDay);
+    // console.log("WorkOffDay id: ", workOffDay.id);
+    // console.log("WorkOffDay staff_id: ", workOffDay.staff_id);
+    // console.log("WorkOffDay status: ", workOffDay.status);
+    // console.log("WorkOffDay start_time: ", workOffDay.start_time);
+    // console.log("WorkOffDay duration_hour: ", workOffDay.duration_hour);
+    // console.log("WorkOffDay description: ", workOffDay.reason);
 
     if (type === "approve") {
         await updateOffRequest(

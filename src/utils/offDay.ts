@@ -1,4 +1,4 @@
-import { DateTime } from "luxon";
+import { DateTime } from 'luxon';
 
 export const calculateOffDay = (offDate: string, startTime: string): string => {
     const dateTimeString = `${offDate} ${startTime}`;
@@ -9,4 +9,4 @@ export const calculateOffDay = (offDate: string, startTime: string): string => {
     });
   
     return offDay.toFormat("yyyy-MM-dd HH:mm:ss.SSSZZ");
-  };
+};

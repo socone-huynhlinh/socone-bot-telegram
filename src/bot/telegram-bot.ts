@@ -7,6 +7,7 @@ import { setUserSession, getUserSession, deleteUserSession } from "../config/use
 import { handleCheckin } from "./handlers/checkin/checkin"
 import { handleRegister } from "./handlers/register/register-test"
 import dotenv from "dotenv"
+import { handleMenu } from "./handlers/menu/menu"
 dotenv.config()
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
 
@@ -20,47 +21,64 @@ bot.on("message", async (msg) => {
     const chatId = msg.chat.id
     const text = msg.text?.trim() || ""
 
-    if (text === "/cancel") {
-        const session = await getUserSession(chatId)
+    const session = await getUserSession(chatId);
 
+    if (text === "/cancel") {
+        // const session = await getUserSession(chatId)
         if (session) {
             // Dừng lắng nghe nếu có listener
             if (session.listener) {
                 bot.off("message", session.listener)
             }
-            await deleteUserSession(chatId) // Xóa trạng thái
-            await bot.sendMessage(chatId, "You have canceled the current action.")
+            await deleteUserSession(chatId); // Xóa trạng thái
+            await bot.sendMessage(chatId, "You have canceled the current action.");
         } else {
-            await bot.sendMessage(chatId, "There is no action to cancel.")
+            await bot.sendMessage(chatId, "There is no action to cancel.");
         }
         return
     }
 
     if (text.startsWith("/")) {
+        if (session?.command && session.command !== text) {
+            await bot.sendMessage(
+                chatId,
+                `You are currently in the middle of the command "${session.command}". Please use /cancel to stop the current process before starting a new one.`
+            );
+            return;
+        }
         switch (true) {
             case /^\/start$/.test(text):
-                handleStart(bot, msg)
-                break
+                // await setUserSession(chatId, { command: "/start" });
+                handleStart(bot, msg);
+                break;
 
             case /^\/checkin$/.test(text):
-                handleCheckin(bot, msg)
-                break
+                await setUserSession(chatId, { command: "/checkin" });
+                handleCheckin(bot, msg);
+                break;
 
             case /^\/off$/.test(text):
-                handleRequestOff(bot, msg)
-                break
+                await setUserSession(chatId, { command: "/off" });
+                handleRequestOff(bot, msg);
+                break;
 
             case /^\/register$/.test(text):
-                handleRegister(bot, msg)
-                break
+                await setUserSession(chatId, { command: "/register" });
+                handleRegister(bot, msg);
+                break;
 
-            case /^\/list-company-staffs$/.test(text):
-                handleGetListStaffs(bot, msg)
-                break
+            // case /^\/list-company-staffs$/.test(text):
+            //     await setUserSession(chatId, { command: "/list-company-staffs" });
+            //     handleGetListStaffs(bot, msg);
+            //     break;
+
+            case /^\/menu$/.test(text):
+                handleMenu(bot, msg);
+                break;
 
             default:
-                bot.sendMessage(chatId, "Invalid command. Please try again.")
-                break
+                bot.sendMessage(chatId, "Invalid command. Please try again.");
+                break;
         }
     }
     // else {
