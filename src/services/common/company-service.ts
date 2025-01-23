@@ -6,7 +6,7 @@ export const getCompanies = async (): Promise<Company[]> => {
     try {
         const query = `
             SELECT *
-            FROM company;
+            FROM companies;
         `;
         const result = await client.query<Company>(query, []);
         return result.rows;

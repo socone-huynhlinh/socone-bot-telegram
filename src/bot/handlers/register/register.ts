@@ -2,7 +2,7 @@ import TelegramBot, { Message } from "node-telegram-bot-api";
 import Company from "../../../models/companies";
 import { getCompanies } from "../../../services/common/company-service";
 import { getBranchesByCompanyId } from "../../../services/common/branch-service";
-import Branch from "../../../models/branchs";
+import Branch from "../../../models/branches";
 import Department from "../../../models/departments";
 import { getDepartmentsByBranchId } from "../../../services/common/department-service";
 import { deleteUserSession, getUserSession, setUserSession } from "../../../config/user-session";

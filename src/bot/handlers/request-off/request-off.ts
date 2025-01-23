@@ -17,16 +17,16 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
 
     const existingSession = await getUserSession(chatId);
     if (existingSession?.listener) {
-        bot.off("message", existingSession.listener);
+        bot.off("message", existingSession.listener); // Xóa listener cũ
     }
 
-    const staff: Staff | null = await getStaffByChatId(chatId.toString())
+    const staff: Staff | null = await getStaffByChatId(chatId.toString());
     if (!staff) {
         bot.sendMessage(chatId, "You have not registered yet. Please use /register to register an account to use this feature.");
         await deleteUserSession(chatId);
         return;
     }
-    
+
     await bot.sendMessage(
         chatId,
         'Please select the day you need off and the reason, using the format:\n- Month/Day/Year-Reason\n- Example: 10/31/2025-sick'
@@ -36,9 +36,41 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
         if (response.chat.id !== chatId) return;
 
         if (response.text?.trim() === "/cancel") {
+            bot.off("message", messageListener); // Hủy listener khi người dùng hủy
+            await deleteUserSession(chatId);
+            return;
+        }
+
+        bot.off("message", messageListener);
+        // await setUserSession(chatId, { command: "typingRequestOff" });
+        
+    };
+
+    bot.on("message", messageListener);
+
+    await setUserSession(chatId, { command: "/off", listener: messageListener });
+
+    await handleOffRequestDetails(bot, chatId, staff.id!);
+};
+
+export const handleOffRequestDetails = async (bot: TelegramBot, chatId: number, staffId: string) => {
+    const existingSession = await getUserSession(chatId);
+    if (existingSession?.listener) {
+        bot.off("message", existingSession.listener);
+    }
+
+    const messageListener = async (response: TelegramBot.Message) => {
+        if (response.chat.id !== chatId) return;
+
+        // Kiểm tra nếu người dùng gõ /cancel
+        if (response.text?.trim() === "/cancel") {
             bot.off("message", messageListener);
             await deleteUserSession(chatId);
-            // await bot.sendMessage(chatId, "Action canceled.");
+            return;
+        }
+
+        if (response.text?.trim() === "/off") {
+            // await bot.sendMessage(chatId, "You are already in the process of requesting time off. Please provide the details for your request.");
             return;
         }
 
@@ -51,6 +83,7 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
         const [day, month, year] = offDate.split("/"); 
         const newOffDate = `${month}/${day}/${year}`;
 
+        // Kiểm tra ngày nghỉ hợp lệ
         if (!newOffDate) {
             await bot.sendMessage(
                 chatId,
@@ -58,9 +91,6 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
             );
             return;
         }
-
-        console.log("Day off:", newOffDate);
-        console.log("Lý do:", offReason);
 
         if (!isExistDate(newOffDate)) {
             await bot.sendMessage(
@@ -87,7 +117,7 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
         }
 
         const idOffDay = await insertOffRequest(
-            staff.id!,
+            staffId,
             newOffDate,
             999, 
             "pending",
@@ -113,13 +143,14 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
             }
         );
 
-        bot.off("message", messageListener);
-        // await deleteUserSession(chatId);
-    };    
-    bot.on("message", messageListener);
+        bot.off("message", messageListener);  // Hủy listener sau khi xử lý xong
+    };
 
-    await setUserSession(chatId, { command: "/off", listener: messageListener });
+    await setUserSession(chatId, { command: "typingRequestOff"});
+
+    bot.on("message", messageListener); 
 };
+
 
 export const handleRequestOffSelection = async (
     bot: TelegramBot,

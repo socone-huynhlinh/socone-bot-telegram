@@ -1,5 +1,5 @@
 import TelegramBot from "node-telegram-bot-api"
-import { isValidCheckin, isValidCheckinFullTime, isValidCheckinOTTimeInLieu, isValidNewCheckin } from "../../../services/common/valid-checkin"
+import { isValidCheckinFullTime, isValidNewCheckin } from "../../../services/common/valid-checkin"
 import { getWorkShiftByType, getWorkShiftByTypeAndName } from '../../../services/common/work-shift-service';
 import isOutOfWorkingHours from "../../../utils/workingHours";
 import Staff, { mapStaffFromJson } from "../../../models/staff";
@@ -324,6 +324,13 @@ export const handleReportCheckin = async (bot: TelegramBot, chatId: number, user
         }
 
         const workReport = response.text?.trim();
+
+        if (workReport && workReport.startsWith('/')) {
+            await bot.sendMessage(chatId, "Your report cannot start with '/'. Please provide a valid work report.", {
+                parse_mode: "HTML",
+            });
+            return;
+        }
 
         if (!workReport || workReport.length < 6) {
             await bot.sendMessage(

@@ -8,7 +8,6 @@ export const getStaffByChatId = async (chatid: string): Promise<Staff | null> =>
                 select
                     s.*,
                     dp.name as department_name,
-                    tr.name as type_report,
                     ta.id as tele_id,
                     ta.username as tele_username,
                     ta.phone as tele_phone, 
@@ -17,11 +16,10 @@ export const getStaffByChatId = async (chatid: string): Promise<Staff | null> =>
                 from 
                     staffs s
                 inner join departments dp on s.department_id=dp.id
-                left join type_reports tr on s.type_report_id=tr.id
                 inner join staff_devices sd on s.id=sd.staff_id
                 inner join devices d on sd.device_id=d.id
                 inner join tele_accounts ta on s.tele_id=ta.id
-                inner join branch br on dp.branch_id = br.id
+                inner join branches br on dp.branch_id = br.id
                 where s.tele_id=$1 and s.status='approved'
             `
         const result = await client.query<Staff>(query, [chatid])
@@ -44,7 +42,6 @@ export const getStaffPendingByChatId = async (chatid: string): Promise<Staff | n
                 select
                     s.*,
                     dp.name as department_name,
-                    tr.name as type_report,
                     ta.id as tele_id,
                     ta.username as tele_username,
                     ta.phone as tele_phone, 
@@ -53,11 +50,10 @@ export const getStaffPendingByChatId = async (chatid: string): Promise<Staff | n
                 from 
                     staffs s
                 inner join departments dp on s.department_id=dp.id
-                left join type_reports tr on s.type_report_id=tr.id
                 inner join staff_devices sd on s.id=sd.staff_id
                 inner join devices d on sd.device_id=d.id
                 inner join tele_accounts ta on s.tele_id=ta.id
-                inner join branch br on dp.branch_id = br.id
+                inner join branches br on dp.branch_id = br.id
                 where s.tele_id=$1 and s.status='pending'
             `
         const result = await client.query<Staff>(query, [chatid])
@@ -94,13 +90,19 @@ export const checkExistStaff = async (email: string): Promise<boolean> => {
     const client = await pool.connect()
     try {
         let query = `
-      select s.*,dp.name as department_name,tr.name as type_report,ta.id as tele_id,ta.username as tele_username,ta.phone as tele_phone from staffs s
-             inner join departments dp on s.department_id=dp.id
-             left join type_reports tr on s.type_report_id=tr.id
-             inner join staff_devices sd on s.id=sd.staff_id
-             inner join devices d on sd.device_id=d.id
-             inner join tele_accounts ta on s.tele_id=ta.id
-             where s.company_email =$1
+        select
+            s.*,
+            dp.name as department_name,
+            ta.id as tele_id,
+            ta.username as tele_username,
+            ta.phone as tele_phone 
+        from
+            staffs s
+        inner join departments dp on s.department_id=dp.id
+        inner join staff_devices sd on s.id=sd.staff_id
+        inner join devices d on sd.device_id=d.id
+        inner join tele_accounts ta on s.tele_id=ta.id
+        where s.company_email =$1
      `
         const result = await client.query<Staff>(query, [email])
         return result.rows.length > 0
