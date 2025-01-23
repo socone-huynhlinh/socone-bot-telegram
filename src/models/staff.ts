@@ -1,7 +1,6 @@
-import Department from "./department"
+import Department from "./departments"
 import Device from "./device"
 import TelegramAccount from "./telegram-account"
-import TypeReport from "./type-report"
 
 type Staff = {
     id?: string
@@ -9,7 +8,7 @@ type Staff = {
     company_email: string
     position: string
     department?: Department
-    type_report?: TypeReport
+    type_report?: string
     tele_account?: TelegramAccount
     device?: Device
     created_at?: Date

@@ -1,10 +1,8 @@
 import pool from "../../config/database"
 
-// Hàm kiểm tra trạng thái checkin của nhân viên
 export const isValidCheckin = async (staffId: string): Promise<boolean | null> => {
     const client = await pool.connect() 
     try {
-        // Truy vấn kiểm tra trạng thái is_checkin của nhân viên
         const query = `
             SELECT * FROM checkins
             INNER JOIN staffs st
@@ -13,9 +11,8 @@ export const isValidCheckin = async (staffId: string): Promise<boolean | null> =
         `
         const res = await client.query(query, [staffId]) 
 
-        // Nếu không tìm thấy bản ghi nào
         if (res.rows.length === 0) {
-            return null 
+            return false 
         }
 
         return res.rows.length > 0
@@ -23,11 +20,112 @@ export const isValidCheckin = async (staffId: string): Promise<boolean | null> =
         console.error("Lỗi khi kiểm tra trạng thái check-in:", err)
         throw err
     } finally {
-        client.release() // Giải phóng kết nối
+        client.release() 
     }
 }
 
-// Hàm ghi trạng thái checkin của nhân viên
+export const isValidCheckinFullTime = async (staffId: string): Promise<boolean | null> => {
+    const client = await pool.connect() 
+    try {
+        const query = `
+            SELECT * FROM checkins
+            INNER JOIN staffs st
+            ON checkins.staff_id=st.id
+            INNER JOIN shifts sh
+            ON checkins.shift_id=sh.id
+            WHERE st.tele_id = $1 AND DATE(time_checkin) = CURRENT_DATE AND sh.type = 'main';
+        `
+        const res = await client.query(query, [staffId]) 
+
+        if (res.rows.length === 0) {
+            return false 
+        }
+
+        return res.rows.length > 0
+    } catch (err) {
+        console.error("Lỗi khi kiểm tra trạng thái check-in:", err)
+        throw err
+    } finally {
+        client.release() 
+    }
+}
+
+export const isValidNewCheckin = async (staffId: string): Promise<{ isValid: boolean, message?: string }> => {
+    const client = await pool.connect(); 
+    try {
+        const query = `
+            SELECT time_checkin, duration_hour
+            FROM checkins
+            INNER JOIN staffs st ON checkins.staff_id = st.id
+            INNER JOIN shifts sh ON checkins.shift_id = sh.id
+            WHERE st.tele_id = $1
+            AND (sh.name = 'ot' OR sh.name = 'time in lieu')
+            AND DATE(time_checkin) = CURRENT_DATE;  
+        `;
+        const res = await client.query(query, [staffId]);
+
+        if (res.rows.length === 0) {
+            return { isValid: true }; 
+        }
+
+        const currentTime = new Date();
+        console.log("Current time:", currentTime);
+
+        for (const row of res.rows) {
+            const existingCheckinTime = row.time_checkin;
+            const existingDuration = row.duration_hour;
+            const existingEndTime = new Date(existingCheckinTime.getTime() + existingDuration * 60 * 60 * 1000);
+
+            console.log("Existing check-in time:", existingCheckinTime);
+            console.log("Existing end time:", existingEndTime);
+
+            if (currentTime >= existingCheckinTime && currentTime <= existingEndTime) {
+                const timeRemaining = existingEndTime.getTime() - currentTime.getTime();
+                const hoursRemaining = Math.floor(timeRemaining / (1000 * 60 * 60));
+                const minutesRemaining = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+
+                const message = `You cannot check-in yet. Please wait until ${existingEndTime.getHours()}:${existingEndTime.getMinutes().toString().padStart(2, '0')}.`;
+                return { isValid: false, message };
+            }
+        }
+
+        return { isValid: true }; 
+    } catch (err) {
+        console.error("Lỗi khi kiểm tra thời gian check-in:", err);
+        throw err;
+    } finally {
+        client.release();
+    }
+}
+
+export const isValidCheckinOTTimeInLieu = async (staffId: string): Promise<boolean | null> => {
+    const client = await pool.connect() 
+    try {
+        const query = `
+            SELECT SUM(duration_hour) AS total_duration
+            FROM checkins
+            INNER JOIN staffs st ON checkins.staff_id=st.id
+            INNER JOIN shifts sh ON checkins.shift_id=sh.id
+            WHERE st.tele_id = $1 
+            AND DATE(time_checkin) = CURRENT_DATE 
+            AND (sh.name = 'OT' OR sh.name = 'Time in lieu');
+        `
+        const res = await client.query(query, [staffId]) 
+
+        if (res.rows.length === 0) {
+            return null 
+        }
+
+        const totalDuration = res.rows[0].total_duration || 0
+        return totalDuration >= 4
+    } catch (err) {
+        console.error("Lỗi khi kiểm tra trạng thái check-in:", err)
+        throw err
+    } finally {
+        client.release() 
+    }
+}
+
 export const insertCheckin = async (staffId: string, workShiftId: string, durationWorkHour: number): Promise<void> => {
     const client = await pool.connect() 
     try {
@@ -46,7 +144,7 @@ export const insertCheckin = async (staffId: string, workShiftId: string, durati
         console.error("Lỗi khi ghi trạng thái check-in:", err)
         throw err
     } finally {
-        client.release() // Giải phóng kết nối
+        client.release() 
     }
 }
 

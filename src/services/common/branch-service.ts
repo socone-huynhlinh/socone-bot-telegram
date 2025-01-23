@@ -1,5 +1,5 @@
 import pool from "../../config/database";
-import Branch from "../../models/branch";
+import Branch from "../../models/branchs";
 
 export const getBranchesByCompanyId = async (companyId: string): Promise<Branch[]> => {
     const client = await pool.connect()

@@ -1,4 +1,4 @@
-import Branch from "./branch"
+import Branch from "./branchs"
 
 type Department={
     id: string

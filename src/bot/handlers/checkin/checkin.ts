@@ -1,5 +1,5 @@
 import TelegramBot from "node-telegram-bot-api"
-import { isValidCheckin } from "../../../services/common/valid-checkin"
+import { isValidCheckin, isValidCheckinFullTime, isValidCheckinOTTimeInLieu, isValidNewCheckin } from "../../../services/common/valid-checkin"
 import { getWorkShiftByType, getWorkShiftByTypeAndName } from '../../../services/common/work-shift-service';
 import isOutOfWorkingHours from "../../../utils/workingHours";
 import Staff, { mapStaffFromJson } from "../../../models/staff";
@@ -26,9 +26,6 @@ export const handleCheckin = async (bot: TelegramBot, msg: TelegramBot.Message) 
     }
 
     const staff: Staff | null = await getStaffByChatId(chatId.toString());
-    console.log("Staff: ", staff?.id);
-    setUserData(chatId, "staffId", staff?.id)
-
     if (!staff) {
         bot.sendMessage(chatId, "You have not registered yet. Please use /register to register an account to use this feature.");
         await deleteUserSession(chatId);
@@ -36,13 +33,28 @@ export const handleCheckin = async (bot: TelegramBot, msg: TelegramBot.Message) 
         return;
     }
 
+    console.log("Staff: ", staff?.id);
+    setUserData(chatId, "staffId", staff?.id)
+
     const jsonStaff = mapStaffFromJson(staff);
     if (jsonStaff?.tele_account) {
-        const isCheckin = await isValidCheckin(jsonStaff.tele_account.id);
-        if (isCheckin) {
-            console.log('User has already checked in');
-            bot.sendMessage(chatId, "You have already checked in; you cannot check in again.");
-            return;
+        if (!isOutOfWorkingHours()) {
+            const checkinResult = await isValidNewCheckin(jsonStaff.tele_account.id);
+            if (!checkinResult.isValid) {
+                console.log('User has already checked in for OT or Time in lieu');
+                await bot.sendMessage(chatId, checkinResult.message || "You have checked in during this period");
+                await deleteUserSession(chatId);
+                return;
+            }
+        }
+        else {
+            const isCheckin = await isValidCheckinFullTime(jsonStaff.tele_account.id);
+            if (isCheckin) {
+                console.log('User has already checked in');
+                await bot.sendMessage(chatId, "You have already checked in; you cannot check in again.");
+                await deleteUserSession(chatId);
+                return;
+            }
         }
     }
 
@@ -52,7 +64,7 @@ export const handleCheckin = async (bot: TelegramBot, msg: TelegramBot.Message) 
         if (response.text?.trim() === "/cancel") {
             bot.off("message", messageListener);
             await deleteUserSession(chatId);
-            await bot.sendMessage(chatId, "✅ You have canceled the current action.");
+            // await bot.sendMessage(chatId, "✅ You have canceled the current action.");
             return;
         }
         bot.off("message", messageListener);
@@ -289,7 +301,7 @@ export const handleSpecialTimeSelection = async (bot: TelegramBot, chatId: numbe
     // await handleReportCheckin(bot, chatId, userName, shift.id);
 }
 
-export const handleReportCheckin = async (bot: TelegramBot, chatId: number, userName: string, shiftId: string) => {
+export const handleReportCheckin = async (bot: TelegramBot, chatId: number, userName: string, shiftId: string, ) => {
     await bot.sendMessage(chatId, "Please report your planned work for today (at least 6 characters).", {
         parse_mode: "HTML",
     });

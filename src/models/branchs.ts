@@ -1,4 +1,4 @@
-import Company from "./company"
+import Company from "./companies"
 
 type Branch={
     id: string

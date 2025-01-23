@@ -1,33 +1,42 @@
 import TelegramBot, { Message } from "node-telegram-bot-api";
-import Company from "../../../models/company";
+import Company from "../../../models/companies";
 import { getCompanies } from "../../../services/common/company-service";
 import { getBranchesByCompanyId } from "../../../services/common/branch-service";
-import Branch from "../../../models/branch";
-import Department from "../../../models/department";
+import Branch from "../../../models/branchs";
+import Department from "../../../models/departments";
 import { getDepartmentsByBranchId } from "../../../services/common/department-service";
 import { deleteUserSession, getUserSession, setUserSession } from "../../../config/user-session";
 import { validateEmailCompany } from "../../../utils/valid-email";
-import { checkExistStaff, updateStatusStaffByTeleId } from "../../../services/staff/staff-service";
+import { checkExistStaff, getStaffByChatId, updateStatusStaffByTeleId } from "../../../services/staff/staff-service";
 import getLocalIp from "../../../utils/get-ip-address";
-import { getUserData, setUserData } from "../../../config/user-data";
+import { deleteUserData, getUserData, setUserData } from "../../../config/user-data";
 import redisClient from "../../../config/redis-client";
+import Staff from "../../../models/staff";
 
 const idAdmin = process.env.ID_GROUP_OFF || "";
 
 export const handleRegister = async (bot: TelegramBot, msg: TelegramBot.Message): Promise<void> => {
     const chatId = msg.chat.id;
 
+    const staff: Staff | null = await getStaffByChatId(chatId.toString());
+    console.log("Staff: ", staff?.id);
+    setUserData(chatId, "staffId", staff?.id)
+
+    if (staff) {
+        bot.sendMessage(chatId, "You have previously registered an account, you cannot register again.");
+        await deleteUserSession(chatId);
+        deleteUserData(chatId);
+        return;
+    }
+
     if (!msg.from) {
         bot.sendMessage(chatId, "Unable to perform Check-in due to missing user information.");
         return;
     }
-    const userName = `${msg.from.first_name || ""} ${msg.from.last_name || ""}`.trim();
 
-    // const existingSession = await getUserSession(chatId);
-    // if (existingSession) {
-    //     await bot.sendMessage(chatId, "You are already in the process of registering. Please complete the current registration process before starting a new one.");
-    //     return;
-    // }
+    console.log(msg)
+
+    const userName = `${msg.from.first_name || ""} ${msg.from.last_name || ""}`.trim();
 
     const existingSession = await getUserSession(chatId);
     if (existingSession?.listener) {

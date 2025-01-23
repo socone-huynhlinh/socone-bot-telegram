@@ -1,7 +1,7 @@
 import http from "http"
 import bot from "../../telegram-bot"
 import { sessionDay } from "../../../utils/session-day"
-import { insertCheckin } from "../../../services/common/valid-checkin"
+import { insertCheckin, isValidCheckin } from "../../../services/common/valid-checkin"
 import { getStaffByChatId, getStaffPendingByChatId } from "../../../services/staff/staff-service"
 import Staff, { mapStaffFromJson } from "../../../models/staff"
 import redisClient from "../../../config/redis-client"
@@ -24,6 +24,17 @@ export const handleCheckinRequest = async (chatId: number, userName: string, act
             // const account: TelegramAccount | null = await getAccountById(chatId)
             const staff: Staff | null = await getStaffByChatId(chatId.toString())
             const jsonStaff = mapStaffFromJson(staff);
+
+            if (jsonStaff?.tele_account) {
+                const isCheckin = await isValidCheckin(jsonStaff.tele_account.id);
+                if (isCheckin) {
+                    console.log('User has already checked in');
+                    // bot.sendMessage(chatId, "You have already checked in; you cannot check in again.");
+                    res.statusCode = 200;
+                    res.end('You have already checked in; you cannot check in again.');
+                    return;
+                }
+            }
 
             if (jsonStaff?.id) {
                 await insertCheckin(jsonStaff.id, shiftId, 8);
@@ -53,6 +64,17 @@ export const handleCheckinRequest = async (chatId: number, userName: string, act
             // const account: TelegramAccount | null = await getAccountById(chatId)
             const staff: Staff | null = await getStaffByChatId(chatId.toString())
             const jsonStaff = mapStaffFromJson(staff);
+
+            if (jsonStaff?.tele_account) {
+                const isCheckin = await isValidCheckin(jsonStaff.tele_account.id);
+                if (isCheckin) {
+                    console.log('User has already checked in');
+                    // bot.sendMessage(chatId, "You have already checked in; you cannot check in again.");
+                    res.statusCode = 200;
+                    res.end('You have already checked in; you cannot check in again.');
+                    return;
+                }
+            }
 
             const typeDisplay = {
                 ot: "OT",

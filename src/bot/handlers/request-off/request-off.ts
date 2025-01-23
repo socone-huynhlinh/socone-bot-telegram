@@ -116,9 +116,9 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
         bot.off("message", messageListener);
         // await deleteUserSession(chatId);
     };    
+    bot.on("message", messageListener);
 
     await setUserSession(chatId, { command: "/off", listener: messageListener });
-    bot.on("message", messageListener);
 };
 
 export const handleRequestOffSelection = async (

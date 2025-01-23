@@ -1,5 +1,5 @@
 import pool from "../../config/database"
-import Department from "../../models/department";
+import Department from "../../models/departments";
 
 export const getDepartmentsByBranchId = async (branchId: string): Promise<Department[]> =>{
     const client = await pool.connect();

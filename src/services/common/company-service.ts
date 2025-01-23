@@ -1,5 +1,5 @@
 import pool from "../../config/database";
-import Company from "../../models/company";
+import Company from "../../models/companies";
 
 export const getCompanies = async (): Promise<Company[]> => {
     const client = await pool.connect();
