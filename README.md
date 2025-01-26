@@ -56,7 +56,7 @@ bash get-ip.sh
 TELEGRAM_BOT_TOKEN=
 ```
 
-**_Bot in .env file is dangnguyen bot link: https://web.telegram.org/k/#@socone_dangnguyen_bot_**
+**Bot in .env file is dangnguyen bot link: https://t.me/socone_dangnguyen_bot**
 
 **5. Run the following command to start the project**
 
