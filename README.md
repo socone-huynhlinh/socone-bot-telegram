@@ -4,78 +4,70 @@
 
 This project is a Telegram bot that interacts with users and performs various tasks such as checking in, checking out, and listing company staff.
 
-### Folder Structure
+### Technology Stack
+
+- Node.js: Bot server
+- NestJS: Backend web application
+- NextJS: Frontend web application
+- PostgreSQL: Database
+- Redis: Cache
+- Docker: Containerization
+- DigitalOcean: Server VPS
+- VPN: Wireguard
+- Telegram: Messaging platform
+
+## How to run this project
+
+### Prerequisites
+
+- Docker
+- Docker Compose
+
+**Command On Mac**: Pass this command when you already have docker and docker-compose installed
 
 ```bash
-socon-bot-telegram/
-├── src/
-│   ├── app.ts
-│   ├── bot/
-│   │   ├── handlers/
-│   │   │   ├── checkin.ts
-│   │   │   ├── common.ts
-│   │   │   ├── device-handlers.ts
-│   │   │   ├── list-company-staffs.ts
-│   │   ├── telegram-bot.ts
-│   ├── config/
-│   │   ├── database.ts
-│   │   ├── telegram-config.ts
-│   ├── middleware/
-│   │   ├── check-ip-address.ts
-│   ├── models/
-│   │   ├── user.ts
-│   │   ├── work-hour.ts
-│   ├── server.ts
-│   ├── services/
-│       ├── admin/
-│       │   ├── staff-manage.ts
-│       ├── common/
-│       │   ├── device-infor.ts
-│       ├── staff/
-│           ├── checkin-service.ts
-├── .env
-├── .prettierrc
-├── package.json
-├── tsconfig.json
-├── tslint.json
-
+brew install docker
+brew install docker-compose
 ```
 
-- **src/**: Contains the source code of the project.
-    - **app.ts**: Entry point of the application.
-    - **bot/**: Contains the bot-related code.
-        - **handlers/**: Contains the handlers for different bot commands.
-            - **checkin.ts**: Handles the check-in command.
-            - **common.ts**: Contains common utility functions for the bot.
-            - **device-handlers.ts**: Handles device-related requests.
-            - **list-company-staffs.ts**: Handles the command to list company staff.
-        - **telegram-bot.ts**: Initializes and configures the Telegram bot.
-    - **config/**: Contains configuration files.
-        - **database.ts**: Database configuration.
-        - **telegram-config.ts**: Telegram bot configuration.
-    - **middleware/**: Contains middleware functions.
-        - **check-ip-address.ts**: Middleware to check the IP address.
-    - **models/**: Contains data models.
-        - **user.ts**: User model.
-        - **work-hour.ts**: Work hour model.
-    - **server.ts**: Server setup and route definitions.
-    - **services/**: Contains service functions.
-        - **admin/**: Admin-related services.
-            - **staff-manage.ts**: Service to manage staff.
-        - **common/**: Common services.
-            - **device-infor.ts**: Service to get device information.
-        - **staff/**: Staff-related services.
-            - **checkin-service.ts**: Service to handle check-in.
+**Check Docker and Docker Compose version**
 
-### Scripts
+```bash
+docker --version
+docker-compose --version
+```
 
-**Use npm**
+### Run the project
 
-- **start**: Starts the application.
-- **dev**: Starts the application in development mode with file watching.
+**1. Clone the repository and cd into the project directory**
 
-### Configuration
+**2. Run the following command to start the project**
+Get Ip address local
 
-- **.env**: Environment variables configuration.
-- **.prettierrc**: Prettier configuration.
-- **tsconfig.json**: TypeScript configuration.
+```bash
+bash get-ip.sh
+```
+
+Build docker image
+
+```bash
+docker-compose build -d --build
+```
+
+**When the build is complete, you can use telegram bot with your bot token add into file .env**
+
+```bash
+TELEGRAM_BOT_TOKEN=
+```
+
+**Describe about .env file**
+
+1. TELEGRAM_BOT_TOKEN: Telegram bot token
+2. DB_HOST: Database host (localhost or ip address local)
+3. DB_PORT: Database port (5434)
+4. DB_USER: Database user (postgres)
+5. DB_PASS: Database password (postgres)
+6. DB_NAME: Database name (socone_telegram_bot)
+7. REDIS_HOST: Redis host (Redis)
+8. REDIS_PORT: Redis port (6379)
+9. ID_GROUP_OFF: Telegram group id (123456789)
