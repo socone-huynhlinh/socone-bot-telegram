@@ -46,7 +46,7 @@ git checkout feat-SoC-bot/product-v1.0
 ```
 
 **2. Run the following command to start the project**
-Get Ip address (it will get you ip private) if this the first time run this project
+Get Ip address (it will get you ip private) if this the first time run this project **_required to have .env file_**
 
 ```bash
 bash get-ip.sh
