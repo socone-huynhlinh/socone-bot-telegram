@@ -68,20 +68,27 @@ export const isValidNewCheckin = async (staffId: string): Promise<{ isValid: boo
             return { isValid: true }; 
         }
 
-        const currentTime = new Date();
-
+        // const currentTime = new Date();
+        const currentTimeUTC = new Date();
+        const currentTime = new Date(currentTimeUTC.getTime() + 7 * 60 * 60 * 1000);
+        
         for (const row of res.rows) {
-            const existingCheckinTime = row.time_checkin;
+            const existingCheckinTime = new Date(row.time_checkin.getTime() + 7 * 60 * 60 * 1000); // Chuyển sang UTC+7
             const existingDuration = row.duration_hour;
-            const existingEndTime = new Date(existingCheckinTime.getTime() + existingDuration * 60 * 60 * 1000);
+            const existingEndTime = new Date(
+                existingCheckinTime.getTime() + existingDuration * 60 * 60 * 1000
+            );
+
+            console.log("currentTime", currentTime);
+            console.log("existingCheckinTime", existingCheckinTime);
+            console.log("existingEndTime", existingEndTime);
 
             if (currentTime >= existingCheckinTime && currentTime <= existingEndTime) {
-                const timeRemaining = existingEndTime.getTime() - currentTime.getTime();
-                const hoursRemaining = Math.floor(timeRemaining / (1000 * 60 * 60));
-                const minutesRemaining = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
-
-                const message = `You cannot check-in yet. Please wait until ${existingEndTime.getHours()}:${existingEndTime.getMinutes().toString().padStart(2, '0')}.`;
-                return { isValid: false, message };
+                const formattedEndTime = `${existingEndTime.getHours().toString().padStart(2, '0')}:${existingEndTime.getMinutes().toString().padStart(2, '0')}`;
+                return {
+                    isValid: false,
+                    message: `You cannot check-in yet. Please wait until ${formattedEndTime}.`
+                };
             }
         }
 
