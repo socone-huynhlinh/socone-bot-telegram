@@ -60,6 +60,8 @@ docker-compose build -d --build
 TELEGRAM_BOT_TOKEN=
 ```
 
+**_Bot in .env file is dangnguyen bot link: https://web.telegram.org/k/#@socone_dangnguyen_bot_**
+
 **Describe about .env file**
 
 1. TELEGRAM_BOT_TOKEN: Telegram bot token
