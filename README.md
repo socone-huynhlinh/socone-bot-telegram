@@ -42,7 +42,7 @@ docker-compose --version
 **1. Clone the repository, cd into the project directory and checkout to product/ver-0.9 branch**
 
 ```bash
-git checkout product/ver-0.9
+git checkout feat-SoC-bot/product-v1.0
 ```
 
 **2. Run the following command to start the project**
