@@ -39,7 +39,11 @@ docker-compose --version
 
 ### Run the project
 
-**1. Clone the repository and cd into the project directory**
+**1. Clone the repository, cd into the project directory and checkout to product/ver-0.9 branch**
+
+```bash
+git checkout product/ver-0.9
+```
 
 **2. Run the following command to start the project**
 Get Ip address (it will get you ip private) if this the first time run this project
