@@ -6,7 +6,6 @@ export const setUserData = (chatId: number, key: string, value: any): void =>{
     userData.set(chatId, data);
 }
 export const getUserData = (chatId: number): Record<string, any> | undefined =>{
-    console.log(`Getting user data: ${chatId} -> ${userData.get(chatId)}`);
     return userData.get(chatId);
 }
 export const deleteUserData = (chatId: number): void =>{

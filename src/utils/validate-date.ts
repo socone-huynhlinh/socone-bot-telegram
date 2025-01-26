@@ -12,7 +12,6 @@ export const isFutureDate = (dateStr: string): boolean => {
     const date = new Date(year, month - 1, day);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    console.log(`Today: ${today}, Request Date: ${date}`);
     return date >= today;
 }   
 
@@ -22,7 +21,6 @@ export const isExpiredRequestOffDate = (dateStr: string): boolean => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const diffTime = today.getTime() - date.getTime();
-    // const diffTime = date.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays >= 3;
 }
@@ -42,9 +40,6 @@ export const isValidStartTime = (offDate: string, startTime: string): boolean =>
 
     const selectedDate = new Date(offYear, offMonth - 1, offDay, selectedHour, selectedMinute);
     const currentDate = new Date(currentYear, currentMonth - 1, currentDay, currentHour, currentMinute);
-
-    console.log("Selected date:", selectedDate);
-    console.log("Current date:", currentDate);
 
     return selectedDate >= currentDate;
 }

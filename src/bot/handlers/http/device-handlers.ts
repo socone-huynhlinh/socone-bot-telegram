@@ -17,21 +17,15 @@ export const handleCheckinRequest = async (chatId: number, userName: string, act
         const lateMessage = lateTime > 0 ? `Late: ${lateFormatted}` : '';
 
         const messageId = getUserData(chatId)?.messageId;
-        console.log("Message ID: ", messageId);
 
         if (action.split("_")[0] === "checkin" && action.split("_")[1] === "main") {
 
-            console.log("0: ", chatId);
-
-            // const account: TelegramAccount | null = await getAccountById(chatId)
             const staff: Staff | null = await getStaffByChatId(chatId.toString())
             const jsonStaff = mapStaffFromJson(staff);
 
             if (jsonStaff?.tele_account) {
                 const isCheckin = await isValidCheckin(jsonStaff.tele_account.id);
                 if (isCheckin) {
-                    console.log('User has already checked in');
-                    // bot.sendMessage(chatId, "You have already checked in; you cannot check in again.");
                     res.statusCode = 200;
                     res.end('You have already checked in; you cannot check in again.');
                     return;
@@ -40,9 +34,6 @@ export const handleCheckinRequest = async (chatId: number, userName: string, act
 
             if (jsonStaff?.id) {
                 await insertCheckin(jsonStaff.id, shiftId, 8);
-                console.log("Telegram Account: ", jsonStaff.tele_account?.username);
-            } else {
-                console.log("Không tìm thấy tài khoản.")
             }
 
             const disableKeyboard = {
@@ -76,17 +67,12 @@ export const handleCheckinRequest = async (chatId: number, userName: string, act
             }
         }
         else if (action.split("_")[0] === "checkin" && action.split("_")[1] === "special") {
-            console.log("0: ", chatId);
-
-            // const account: TelegramAccount | null = await getAccountById(chatId)
             const staff: Staff | null = await getStaffByChatId(chatId.toString())
             const jsonStaff = mapStaffFromJson(staff);
 
             if (jsonStaff?.tele_account) {
                 const isCheckin = await isValidCheckin(jsonStaff.tele_account.id);
                 if (isCheckin) {
-                    console.log('User has already checked in');
-                    // bot.sendMessage(chatId, "You have already checked in; you cannot check in again.");
                     res.statusCode = 200;
                     res.end('You have already checked in; you cannot check in again.');
                     return;
@@ -101,12 +87,8 @@ export const handleCheckinRequest = async (chatId: number, userName: string, act
 
             const duration = action.split("_")[3];
 
-            console.log("Type Display: ", typeDisplay);
-
             if (staff?.id) {
                 await insertCheckin(staff.id, shiftId, parseInt(duration));
-            } else {
-                console.log("Không tìm thấy tài khoản.")
             }
 
             const disableKeyboard = {
@@ -140,34 +122,6 @@ export const handleCheckinRequest = async (chatId: number, userName: string, act
     } catch (error) {
         res.statusCode = 500
         res.end(`Đã xảy ra lỗi: ${error}`)
-        // res.end(`
-        //     <!DOCTYPE html>
-        //     <html lang="en">
-        //     <head>
-        //         <meta charset="UTF-8">
-        //         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        //         <title>Registration Failed</title>
-        //         <style>
-        //             body {
-        //                 font-family: Arial, sans-serif;
-        //                 text-align: center;
-        //                 margin-top: 50px;
-        //             }
-        //             h1 {
-        //                 color: #EF0000FF;
-        //             }
-        //             p {
-        //                 font-size: 18px;
-        //                 color: #555;
-        //             }
-        //         </style>
-        //     </head>
-        //     <body>
-        //         <h1>Checkin Failed!</h1>
-        //         <p>${error}</p>
-        //     </body>
-        //     </html>
-        // `);
         return;
     }
 }
@@ -187,10 +141,6 @@ export const handleGetMacRequest = async (chatId: number, res: http.ServerRespon
         res.end("MAC address is missing.");
         return;
     }
-
-    console.log(`Handling MAC address for chatId: ${chatId}`);
-    console.log(`MAC Address: ${macAddress}`);
-    console.log(`IP Address: ${ipAddress}`);
 
     try {
         const userData = await redisClient.get(`user:${chatId}`);
@@ -241,7 +191,6 @@ export const handleGetMacRequest = async (chatId: number, res: http.ServerRespon
                     reply_markup: {
                         inline_keyboard: [
                             [
-                                // { text: "Approve ✅", callback_data: `register_approve_${chatId}` },
                                 { text: "FullTime ✅", callback_data: `register_approve_${chatId}_fulltime` },
                                 { text: "PartTime ✅", callback_data: `register_approve_${chatId}_parttime` },
                                 { text: "Reject ❌", callback_data: `register_reject_${chatId}_none` }
@@ -283,7 +232,6 @@ export const handleGetMacRequest = async (chatId: number, res: http.ServerRespon
             `); 
             return;
         } else {
-            // Xóa dữ liệu người dùng khỏi Redis nếu thất bại
             await redisClient.del(`user:${chatId}`);
             await deleteUserSession(chatId);
             res.end(`
@@ -347,6 +295,4 @@ export const handleGetMacRequest = async (chatId: number, res: http.ServerRespon
         `);
         return;
     }
-    // res.statusCode = 200;
-    // res.end(`MAC Address ${macAddress} registered successfully for chatId ${chatId}.`);
 }

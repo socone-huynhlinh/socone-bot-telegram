@@ -2,8 +2,6 @@ const isOutOfWorkingHours = (): boolean => {
     const now = new Date();
     const day = now.getDay();
 
-    console.log(`Today is: ${day}`);
-
     if (day === 0 || day === 6) {
         return true; 
     }

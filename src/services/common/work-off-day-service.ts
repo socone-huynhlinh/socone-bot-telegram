@@ -76,7 +76,7 @@ export const insertOffRequest = async (
 
     try {
         const result = await pool.query(query, values);
-        return result.rows[0].id; // Trả về ID của yêu cầu mới
+        return result.rows[0].id; 
     } catch (err) {
         console.error("Lỗi khi lưu yêu cầu vào DB:", err);
         throw err;
@@ -107,10 +107,7 @@ export const updateOffRequest = async (
         if (result.rowCount === 0) {
             throw new Error(`Không tìm thấy yêu cầu với id: ${idOffDay}`);
         }
-
-        console.log(`Yêu cầu nghỉ phép với id ${idOffDay} đã được cập nhật.`);
     } catch (err) {
-        console.error("Lỗi khi cập nhật trạng thái yêu cầu:", err);
         throw err;
     }
 };

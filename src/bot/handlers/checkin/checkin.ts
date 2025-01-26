@@ -17,12 +17,9 @@ export const handleCheckin = async (bot: TelegramBot, msg: TelegramBot.Message) 
     }
     const userName = `${msg.from.first_name || ""} ${msg.from.last_name || ""}`.trim();
 
-    console.log(`Check-in request from: ${userName}`);
-
     const existingSession = await getUserSession(chatId);
     if (existingSession?.listener) {
         bot.off("message", existingSession.listener);
-        // await deleteUserSession(chatId);
     }
 
     const staff: Staff | null = await getStaffByChatId(chatId.toString());
@@ -33,7 +30,6 @@ export const handleCheckin = async (bot: TelegramBot, msg: TelegramBot.Message) 
         return;
     }
 
-    console.log("Staff: ", staff?.id);
     setUserData(chatId, "staffId", staff?.id)
 
     const jsonStaff = mapStaffFromJson(staff);
@@ -41,7 +37,6 @@ export const handleCheckin = async (bot: TelegramBot, msg: TelegramBot.Message) 
         if (isOutOfWorkingHours()) {
             const checkinResult = await isValidNewCheckin(jsonStaff.tele_account.id);
             if (!checkinResult.isValid) {
-                console.log('User has already checked in for OT or Time in lieu');
                 await bot.sendMessage(chatId, checkinResult.message || "You have checked in during this period");
                 await deleteUserSession(chatId);
                 return;
@@ -50,7 +45,6 @@ export const handleCheckin = async (bot: TelegramBot, msg: TelegramBot.Message) 
         else {
             const isCheckin = await isValidCheckinFullTime(jsonStaff.tele_account.id);
             if (isCheckin) {
-                console.log('User has already checked in');
                 await bot.sendMessage(chatId, "You have already checked in; you cannot check in again.");
                 await deleteUserSession(chatId);
                 return;
@@ -64,11 +58,9 @@ export const handleCheckin = async (bot: TelegramBot, msg: TelegramBot.Message) 
         if (response.text?.trim() === "/cancel") {
             bot.off("message", messageListener);
             await deleteUserSession(chatId);
-            // await bot.sendMessage(chatId, "✅ You have canceled the current action.");
             return;
         }
         bot.off("message", messageListener);
-        // await deleteUserSession(chatId);
     };
 
     bot.on("message", messageListener);
@@ -101,8 +93,6 @@ export const handleCheckinMain = async (bot: TelegramBot, chatId: number, userNa
         return;
     }
 
-    console.log(`Yêu cầu Check-in ca chính từ: ${userName}`);
-
     const ipServer = getLocalIp();
     const portServer = process.env.PORT_SERVER || 3000;
     const checkinUrl = `http://${ipServer}:${portServer}/check-device?chatId=${chatId}&userName=${encodeURIComponent(userName)}&action=checkin_main&shiftId=${shiftId}`;
@@ -116,9 +106,6 @@ export const handleCheckinMain = async (bot: TelegramBot, chatId: number, userNa
         },
         parse_mode: "HTML",
     });
-    // await deleteUserSession(chatId);
-
-    // await handleReportCheckin(bot, chatId, userName, shiftId);
 };
 
 export const handleCheckinSpecial = async (bot: TelegramBot, chatId: number) => {
@@ -133,11 +120,9 @@ export const handleCheckinSpecial = async (bot: TelegramBot, chatId: number) => 
             if (response.text?.trim() === "/cancel") {
                 bot.off("message", messageListener);
                 await deleteUserSession(chatId);
-                // await bot.sendMessage(chatId, "Action canceled.");
                 return;
             }
             bot.off("message", messageListener);
-            // await deleteUserSession(chatId);
         };
 
     await bot.sendMessage(chatId, "Please select your special shift type", {
@@ -146,7 +131,6 @@ export const handleCheckinSpecial = async (bot: TelegramBot, chatId: number) => 
                 [
                     { text: "OT", callback_data: `special_ot_${chatId}` },
                     { text: "Time in lieu", callback_data: `special_time%20in%20lieu_${chatId}` },
-                    // { text: "Main shift", callback_data: `special_main_${chatId}` },
                 ],
             ],
         },
@@ -168,11 +152,9 @@ export const handleSpecialDurationPartTime = async (bot: TelegramBot, chatId: nu
             if (response.text?.trim() === "/cancel") {
                 bot.off("message", messageListener);
                 await deleteUserSession(chatId);
-                // await bot.sendMessage(chatId, "Action canceled.");
                 return;
             }
             bot.off("message", messageListener);
-            // await deleteUserSession(chatId);
         };
     
     const inlineKeyboard: TelegramBot.InlineKeyboardButton[][] = [];
@@ -220,19 +202,12 @@ export const handleSpecialDuration = async (
             if (response.text?.trim() === "/cancel") {
                 bot.off("message", messageListener);
                 await deleteUserSession(chatId);
-                // await bot.sendMessage(chatId, "Action canceled.");
                 return;
             }
             bot.off("message", messageListener);
-            // await deleteUserSession(chatId);
     };
     
-
-    console.log("Data: ", callbackQuery.data);
-
     const nameType = decodeURIComponent(callbackQuery.data).split("_").slice(1)[0] || [];
-
-    console.log(`Type: ${nameType}, userId: ${chatId}`);
 
     await bot.answerCallbackQuery(callbackQuery.id, { text: `You have selected: ${nameType}` });
 
@@ -274,12 +249,8 @@ export const handleSpecialTimeSelection = async (bot: TelegramBot, chatId: numbe
         return;
     }
 
-    console.log(`type: ${nameType}, userId: ${userId}, duration: ${duration}, shiftId: ${shift.id}`);
-
     await bot.answerCallbackQuery(callbackQuery.id, { text: `You have selected ${duration} hours of work time` });
     const userName = `${callbackQuery.from.first_name || ""} ${callbackQuery.from.last_name || ""}`.trim();
-
-    console.log(`Yêu cầu Check-in ca đặc biệt từ: ${userName}`);
 
     const ipServer = getLocalIp();
     const portServer = process.env.PORT_SERVER || 3000;
@@ -297,8 +268,6 @@ export const handleSpecialTimeSelection = async (bot: TelegramBot, chatId: numbe
     });
 
     setUserData(chatId, "messageId", message.message_id);
-    // await deleteUserSession(chatId);
-    // await handleReportCheckin(bot, chatId, userName, shift.id);
 }
 
 export const handleReportCheckin = async (bot: TelegramBot, chatId: number, userName: string, shiftId: string, ) => {
@@ -318,7 +287,6 @@ export const handleReportCheckin = async (bot: TelegramBot, chatId: number, user
         if (response.text?.trim() === "/cancel") {
             bot.off("message", messageListener);
             await deleteUserSession(chatId);
-            // await bot.sendMessage(chatId, "You have canceled the action.");
             deleteUserData(chatId);
             return;
         }
@@ -341,8 +309,6 @@ export const handleReportCheckin = async (bot: TelegramBot, chatId: number, user
             return;
         }
 
-        console.log(`User ${userName} reported work for shift ${shiftId}: ${workReport}`);
-
         await addReportByStaffId(staffId, workReport);
 
         await bot.sendMessage(
@@ -353,7 +319,6 @@ export const handleReportCheckin = async (bot: TelegramBot, chatId: number, user
 
         bot.off("message", messageListener);
         await deleteUserSession(chatId); 
-        // deleteUserData(chatId);
     };
 
     await setUserSession(chatId, { command: "reportingWork", listener: messageListener });

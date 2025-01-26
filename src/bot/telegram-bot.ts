@@ -23,7 +23,6 @@ bot.on("message", async (msg) => {
     const session = await getUserSession(chatId);
 
     if (text === "/cancel") {
-        // const session = await getUserSession(chatId)
         if (session) {
             // Dừng lắng nghe nếu có listener
             if (session.listener) {
@@ -47,7 +46,6 @@ bot.on("message", async (msg) => {
         }
         switch (true) {
             case /^\/start$/.test(text):
-                // await setUserSession(chatId, { command: "/start" });
                 handleStart(bot, msg);
                 break;
 
@@ -66,11 +64,6 @@ bot.on("message", async (msg) => {
                 handleRegister(bot, msg);
                 break;
 
-            // case /^\/list-company-staffs$/.test(text):
-            //     await setUserSession(chatId, { command: "/list-company-staffs" });
-            //     handleGetListStaffs(bot, msg);
-            //     break;
-
             case /^\/menu$/.test(text):
                 handleMenu(bot, msg);
                 break;
@@ -80,9 +73,6 @@ bot.on("message", async (msg) => {
                 break;
         }
     }
-    // else {
-    //     bot.sendMessage(chatId, "Bạn vừa gửi tin nhắn không phải là lệnh.");
-    // }
 })
 
 handleAdminResponse(bot)

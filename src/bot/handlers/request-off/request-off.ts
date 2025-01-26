@@ -13,7 +13,6 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
     const chatId = msg.chat.id;
     const userName = `${msg.from?.first_name || ""} ${msg.from?.last_name || ""}`.trim();
 
-    console.log(`Yêu cầu Off từ: ${userName}`);
 
     const existingSession = await getUserSession(chatId);
     if (existingSession?.listener) {
@@ -42,7 +41,6 @@ export const handleRequestOff = async (bot: TelegramBot, msg: TelegramBot.Messag
         }
 
         bot.off("message", messageListener);
-        // await setUserSession(chatId, { command: "typingRequestOff" });
     };
 
     bot.on("message", messageListener);
@@ -168,16 +166,10 @@ export const handleRequestOffSelection = async (
 
     const [action, type, userId, offDate, startTime, duration, idOffDay] = callbackQuery.data.split("_");
 
-    console.log("Off date:", offDate);
-    console.log("Start time:", startTime);
-
     const currentDate = new Date();
     const currentDateTime = DateTime.fromJSDate(currentDate, { zone: "Asia/Ho_Chi_Minh" }).toFormat("yyyy-MM-dd HH:mm:ss.SSSZZ");
     
     const offDateSelected = calculateOffDay(offDate, startTime);
-
-    console.log("Current date time:", currentDateTime);
-    console.log("Selected date time:", offDateSelected);
 
     if (offDateSelected <= currentDateTime) {
         await bot.answerCallbackQuery(callbackQuery.id, { text: "Invalid start time! The selected time has already passed." });
@@ -222,11 +214,9 @@ export const handleOffStartTime = async (
             if (response.text?.trim() === "/cancel") {
                 bot.off("message", messageListener);
                 await deleteUserSession(userId);
-                // await bot.sendMessage(chatId, "Action canceled.");
                 return;
             }
             bot.off("message", messageListener);
-            // await deleteUserSession(chatId);
         };
 
     const offDate = callbackQuery.data?.split("_")[3];
@@ -277,11 +267,9 @@ export const handleSelectedStartTime = async (
             if (response.text?.trim() === "/cancel") {
                 bot.off("message", messageListener);
                 await deleteUserSession(userId);
-                // await bot.sendMessage(chatId, "Action canceled.");
                 return;
             }
             bot.off("message", messageListener);
-            // await deleteUserSession(chatId);
         };
 
     const [startHour, startMinute] = startTime.split(":").map(Number);
@@ -290,9 +278,6 @@ export const handleSelectedStartTime = async (
     const currentDateTime = DateTime.fromJSDate(currentDate, { zone: "Asia/Ho_Chi_Minh" }).toFormat("yyyy-MM-dd HH:mm:ss.SSSZZ");
     
     const offDateSelected = calculateOffDay(offDate, startTime);
-
-    console.log("Current date time:", currentDateTime);
-    console.log("Selected date time:", offDateSelected);
 
     if (offDateSelected <= currentDateTime) {
         await bot.answerCallbackQuery(callbackQuery.id, { text: "Invalid start time! The selected time has already passed." });
@@ -333,11 +318,9 @@ export const handleOffHourlySelection = async (
             if (response.text?.trim() === "/cancel") {
                 bot.off("message", messageListener);
                 await deleteUserSession(userId);
-                // await bot.sendMessage(chatId, "Action canceled.");
                 return;
             }
             bot.off("message", messageListener);
-            // await deleteUserSession(chatId);
         };
 
     try {

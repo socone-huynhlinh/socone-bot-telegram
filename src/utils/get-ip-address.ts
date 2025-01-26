@@ -5,11 +5,11 @@ function getLocalIp() {
     for (const interfaceName in networkInterfaces) {
       for (const iface of networkInterfaces[interfaceName] || []) {
         if (iface.family === 'IPv4' && !iface.internal) {
-          return iface.address; // Địa chỉ IPv4 không phải localhost
+          return iface.address; 
         }
       }
     }
-    return '127.0.0.1'; // Mặc định trả về localhost nếu không tìm thấy
+    return '127.0.0.1';
 }
 
 export default getLocalIp

@@ -14,18 +14,6 @@ export const getAllStaffs = async () => {
     }
 }
 
-// export const addStaff = async (staff: any) => {
-//     const client = await pool.connect()
-//     try {
-//         await client.query("INSERT INTO staffs (full_name, role_name, phone_number, company_mail) VALUES ($1, $2, $3, $4)", [staff.full_name, staff.role_name, staff.phone_number, staff.company_mail])
-//     } catch (err) {
-//         console.error("Error adding staff:", err)
-//         throw err
-//     } finally {
-//         client.release()
-//     }
-// }
-
 export const addStaff = async (staff: Staff): Promise<string | null> => {
     const client = await pool.connect()
     try {
@@ -80,17 +68,14 @@ export const addStaff = async (staff: Staff): Promise<string | null> => {
                         VALUES ($1, $2);
                     `
                     await client.query(query, [staff_id, device_id])
-                    await client.query("COMMIT") // Commit transaction
+                    await client.query("COMMIT")
                     return staff_id
-                    // Commit transaction
                 }
             }
         }
-        // Nếu không thực hiện được một bước nào đó, rollback
         await client.query("ROLLBACK")
         return null
     } catch (err) {
-        // Rollback khi có lỗi
         await client.query("ROLLBACK")
         throw err
     } finally {

@@ -33,7 +33,6 @@ export const getWorkShiftByType = async (type: string): Promise<Shift[] | null> 
             FROM public.shifts
             WHERE type = $1;
         `
-        // Return type shift
         const result = await client.query(query, [type])
         const shifts: Shift[] = result.rows.map((row) => ({
             id: row.id,

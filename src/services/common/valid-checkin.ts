@@ -69,15 +69,11 @@ export const isValidNewCheckin = async (staffId: string): Promise<{ isValid: boo
         }
 
         const currentTime = new Date();
-        console.log("Current time:", currentTime);
 
         for (const row of res.rows) {
             const existingCheckinTime = row.time_checkin;
             const existingDuration = row.duration_hour;
             const existingEndTime = new Date(existingCheckinTime.getTime() + existingDuration * 60 * 60 * 1000);
-
-            console.log("Existing check-in time:", existingCheckinTime);
-            console.log("Existing end time:", existingEndTime);
 
             if (currentTime >= existingCheckinTime && currentTime <= existingEndTime) {
                 const timeRemaining = existingEndTime.getTime() - currentTime.getTime();
@@ -136,9 +132,6 @@ export const insertCheckin = async (staffId: string, workShiftId: string, durati
         `
         const result = await client.query(updateQuery, [staffId, workShiftId, durationWorkHour]) 
         if ((result.rowCount ?? 0) > 0) {
-            console.log(`Ghi trạng thái checkin thành công cho nhân viên ${staffId}`)
-        } else {
-            console.log(`Không tìm thấy bản ghi checkin cho nhân viên ${staffId}`)
         }
     } catch (err) {
         console.error("Lỗi khi ghi trạng thái check-in:", err)

@@ -16,7 +16,6 @@ export const getAccountById = async (chatId: number): Promise<TelegramAccount | 
         }
 
         const row = res.rows[0]
-        console.log(row)
 
         const telegramAccount: TelegramAccount = {
             id: row.id,

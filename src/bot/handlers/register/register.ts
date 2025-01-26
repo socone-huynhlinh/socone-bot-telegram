@@ -19,7 +19,6 @@ export const handleRegister = async (bot: TelegramBot, msg: TelegramBot.Message)
     const chatId = msg.chat.id;
 
     const staff: Staff | null = await getStaffByChatId(chatId.toString());
-    console.log("Staff: ", staff?.id);
     setUserData(chatId, "staffId", staff?.id)
 
     if (staff) {
@@ -34,8 +33,6 @@ export const handleRegister = async (bot: TelegramBot, msg: TelegramBot.Message)
         return;
     }
 
-    console.log(msg)
-
     const userName = `${msg.from.first_name || ""} ${msg.from.last_name || ""}`.trim();
 
     const existingSession = await getUserSession(chatId);
@@ -49,11 +46,9 @@ export const handleRegister = async (bot: TelegramBot, msg: TelegramBot.Message)
         if (response.text?.trim() === "/cancel") {
             bot.off("message", messageListener);
             await deleteUserSession(chatId);
-            // await bot.sendMessage(chatId, "Action canceled.");
             return;
         }
         bot.off("message", messageListener);
-        // await deleteUserSession(chatId);
     };
 
     const companies: Company[] = await getCompanies();
@@ -110,11 +105,9 @@ export const handleDepartment = async (bot: TelegramBot, callbackQuery: Telegram
         if (response.text?.trim() === "/cancel") {
             bot.off("message", messageListener);
             await deleteUserSession(chatId);
-            // await bot.sendMessage(chatId, "Action canceled.");
             return;
         }
         bot.off("message", messageListener);
-        // await deleteUserSession(chatId);
     };
 
     const branchId = callbackQuery.data.split("_")[2];
@@ -137,7 +130,6 @@ export const handleDepartment = async (bot: TelegramBot, callbackQuery: Telegram
     });
 }
 
-// await setUserSession(chatId, { command: "registering", departmentId });
 
 export const handleEmail = async (bot: TelegramBot, callbackQuery: TelegramBot.CallbackQuery): Promise<void> => {
     if (!callbackQuery.data) {
@@ -181,7 +173,6 @@ export const handleEmail = async (bot: TelegramBot, callbackQuery: TelegramBot.C
             }
             else {
                 bot.off("message", messageListener);
-                // await deleteUserSession(chatId);
                 setUserData(chatId, "email", email);
                 await setUserSession(chatId, { command: "typingFullName" });
 
@@ -225,7 +216,6 @@ export const handleFullName = async (bot: TelegramBot, callbackQuery: TelegramBo
 
         if (fullName && fullName.length >= 6 && !/\d/.test(fullName)) {
             bot.off("message", messageListener);
-            // await deleteUserSession(chatId);
             setUserData(chatId, "fullName", fullName);
             await setUserSession(chatId, { command: "typingPhone" });
 
@@ -270,7 +260,6 @@ export const handlePhone = async (bot: TelegramBot, callbackQuery: TelegramBot.C
 
         if (phone && phone.length >= 10 && phone.length <= 11 && !isNaN(Number(phone))) {
             bot.off("message", messageListener);
-            // await deleteUserSession(chatId);
             setUserData(chatId, "phone", phone);
             await setUserSession(chatId, { command: "choosingPosition" });
 
@@ -298,7 +287,6 @@ export const handlePosition = async (bot: TelegramBot, callbackQuery: TelegramBo
     }
 
     const userData = getUserData(chatId);
-    console.log("UserData: ", userData);
 
     const messageListener = async (response: TelegramBot.Message) => {
         if (response.chat.id !== chatId) return;
@@ -306,12 +294,10 @@ export const handlePosition = async (bot: TelegramBot, callbackQuery: TelegramBo
         if (response.text?.trim() === "/cancel") {
             bot.off("message", messageListener);
             await deleteUserSession(chatId);
-            // await bot.sendMessage(chatId, "Action canceled.");
             return;
         }
 
         bot.off("message", messageListener);
-        // await deleteUserSession(chatId);
     }
     await setUserSession(chatId, { command: "choosingPosition", listener: messageListener });
 
@@ -368,8 +354,6 @@ export const handleGetMac = async (bot: TelegramBot, callbackQuery: TelegramBot.
             },
         }
     );
-    // await handleAdminRegister(bot, chatId);
-    // await deleteUserSession(chatId);
 }
 
 export const handleRegisterAdmin = async (bot: TelegramBot, type: string, callbackQuery: TelegramBot.CallbackQuery): Promise<void> => {
@@ -379,8 +363,6 @@ export const handleRegisterAdmin = async (bot: TelegramBot, type: string, callba
     }
 
     const [chatId, typeStaff] = callbackQuery.data.split("_").slice(2,4);
-    console.log("Chat ID: ", chatId);
-    console.log("Type Staff: ", typeStaff);
 
     await bot.editMessageReplyMarkup(
         {

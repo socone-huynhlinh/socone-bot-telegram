@@ -1,17 +1,14 @@
-// src/server.ts
-
 import dotenv from "dotenv"
 dotenv.config()
 
 import http from "http"
 import url from "url"
-import "./bot/telegram-bot" // Đảm bảo bot được khởi động khi server chạy
+import "./bot/telegram-bot" 
 import { handleCheckinRequest, handleGetMacRequest } from "./bot/handlers/http/device-handlers"
 import { validateMacMiddleware } from "./middleware/check-ip-address"
 import { captureMacMiddleware } from "./middleware/capture-mac-address"
 const PORT = process.env.PORT || 3000
 
-// Định nghĩa các route và middleware tương ứng
 interface Route {
     path: string
     method: string
@@ -55,13 +52,11 @@ const routes: Route[] = [
     }
 ]
 
-// Tạo server
 const server = http.createServer((req, res) => {
     const parsedUrl = url.parse(req.url || "", true)
     const pathname = parsedUrl.pathname || ""
     const method = req.method || ""
 
-    // Tìm route phù hợp
     const route = routes.find((r) => r.path === pathname && r.method === method)
 
     if (route) {

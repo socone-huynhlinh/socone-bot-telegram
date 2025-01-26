@@ -8,14 +8,10 @@ export const handleAdminResponse = async (bot: TelegramBot) => {
         try {
             const data = callbackQuery.data;
 
-            console.log("Data:", data);
-
             if (!data) {
                 await bot.answerCallbackQuery(callbackQuery.id, { text: "Invalid callback data!" });
                 return;
             }
-
-            console.log("Callback nhận được:", callbackQuery);
 
             const [action, type, userChatId, detail, subdetail, subdetail2] = data.split('_');
 
@@ -23,14 +19,11 @@ export const handleAdminResponse = async (bot: TelegramBot) => {
             
             // Checkin
             if (action === "checkin" && type === "main") {
-                // await handleCheckinMain(bot, userId, callbackQuery);
                 bot.answerCallbackQuery(callbackQuery.id, { text: "You have selected main shift check-in." });
             } else if (action === "checkin" && type === "special") {
-                // await handleCheckinSpecial(bot, userId);
                 bot.answerCallbackQuery(callbackQuery.id, { text: "You have selected special shift check-in." });
             } else if (action === "special") {
                 await handleSpecialDuration(bot, userId, callbackQuery);
-                // bot.answerCallbackQuery(callbackQuery.id, { text: "You have selected special shift." });
             } else if (action === "durationSpecial") {
                 await handleSpecialTimeSelection(bot, userId, callbackQuery);
             }
@@ -38,7 +31,6 @@ export const handleAdminResponse = async (bot: TelegramBot) => {
             // Request off
             else if (action === "off") {
                 const [action, type, userChatId, offDate, startTime, hour, idOffDay] = data.split('_');
-                console.log(`Action: ${action}, Type: ${type}, UserChatId: ${userChatId}, Detail: ${offDate}, StartTime: ${startTime}, Hour: ${hour}, IDOffDay: ${idOffDay}`);
                 if (type === "full" || type === "morning" || type === "afternoon") {
                     await handleRequestOffSelection(bot, callbackQuery);
                 }
