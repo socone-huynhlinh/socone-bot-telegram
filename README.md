@@ -82,7 +82,7 @@ docker-compose up -d
 **6.(Optional) Run the following command to stop the project and remove the container**
 
 ```bash
-docker-compose down
+docker-compose down --volumes
 ```
 
 **7. (Optional) You want to build again, you can run the following command**
