@@ -46,24 +46,26 @@ Get Ip address local
 
 **3. You need to run docker desktop app to run this project**
 
-```bash
-bash get-ip.sh
-```
-
-Build docker image
-
-```bash
-docker-compose build
-docker-compose up
-```
-
-**When the build is complete, you can use telegram bot with your bot token add into file .env**
+**4. Update .env file if you want to change bot token**
 
 ```bash
 TELEGRAM_BOT_TOKEN=
 ```
 
 **_Bot in .env file is dangnguyen bot link: https://web.telegram.org/k/#@socone_dangnguyen_bot_**
+
+**5. Run the following command to start the project**
+
+```bash
+bash get-ip.sh
+```
+
+Build docker image and runn docker container
+
+```bash
+docker-compose build
+docker-compose up
+```
 
 **Describe about .env file**
 
@@ -76,3 +78,16 @@ TELEGRAM_BOT_TOKEN=
 7. REDIS_HOST: Redis host (Redis)
 8. REDIS_PORT: Redis port (6379)
 9. ID_GROUP_OFF: Telegram group id (123456789)
+
+**6.(Optional) Run the following command to stop the project and remove the container**
+
+```bash
+docker-compose down -v
+```
+
+**7. You want to build again, you can run the following command**
+
+```bash
+docker-compose build
+docker-compose up
+```
