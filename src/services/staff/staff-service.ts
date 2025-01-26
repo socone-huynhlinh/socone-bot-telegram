@@ -69,15 +69,18 @@ export const getStaffPendingByChatId = async (chatid: string): Promise<Staff | n
     }
 }
 
-export const updateStatusStaffByTeleId = async (teleId: string, status: string) => {
+export const updateStatusStaffByTeleId = async (teleId: string, status: string, typeStaff: string) => {
     const client = await pool.connect()
+
     try {
         const query = `
             UPDATE staffs
-            SET status = $1
-            WHERE tele_id = $2;
+            SET
+                status = $2,
+                type_staff = $3
+            WHERE tele_id = $1;
         `
-        await client.query(query, [status, teleId])
+        await client.query(query, [teleId, status, typeStaff])
     } catch (err) {
         console.error("Error updating staff status:", err)
         throw err

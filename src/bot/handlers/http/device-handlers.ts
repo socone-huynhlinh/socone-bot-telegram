@@ -8,14 +8,16 @@ import redisClient from "../../../config/redis-client"
 import { addStaff } from "../../../services/admin/staff-manage"
 import { deleteUserSession } from "../../../config/user-session"
 import { handleReportCheckin } from "../checkin/checkin"
-import { deleteUserData } from "../../../config/user-data"
+import { deleteUserData, getUserData } from "../../../config/user-data"
 
 export const handleCheckinRequest = async (chatId: number, userName: string, action: string, shiftId: string,res: http.ServerResponse) => {
-    // Xử lý logic Check-in ở đây
     try {
         const { session, lateFormatted, lateTime } = sessionDay();
 
         const lateMessage = lateTime > 0 ? `Late: ${lateFormatted}` : '';
+
+        const messageId = getUserData(chatId)?.messageId;
+        console.log("Message ID: ", messageId);
 
         if (action.split("_")[0] === "checkin" && action.split("_")[1] === "main") {
 
@@ -42,6 +44,21 @@ export const handleCheckinRequest = async (chatId: number, userName: string, act
             } else {
                 console.log("Không tìm thấy tài khoản.")
             }
+
+            const disableKeyboard = {
+                reply_markup: {
+                    inline_keyboard: [
+                        [
+                            { text: "You have already checked in", callback_data: "disabled" }, 
+                        ],
+                    ],
+                },
+            };
+
+            await bot.editMessageReplyMarkup(disableKeyboard.reply_markup, {
+                chat_id: chatId,
+                message_id: messageId,
+            });
 
             if (lateMessage === '') {
                 bot.sendMessage(
@@ -92,6 +109,21 @@ export const handleCheckinRequest = async (chatId: number, userName: string, act
                 console.log("Không tìm thấy tài khoản.")
             }
 
+            const disableKeyboard = {
+                reply_markup: {
+                    inline_keyboard: [
+                        [
+                            { text: "You have already checked in", callback_data: "disabled" }, 
+                        ],
+                    ],
+                },
+            };
+
+            await bot.editMessageReplyMarkup(disableKeyboard.reply_markup, {
+                chat_id: chatId,
+                message_id: messageId,
+            });
+
             bot.sendMessage(
                 chatId,
                 `<b>${jsonStaff.tele_account?.username} </b>\n${typeDisplay} - ${new Date().toLocaleDateString('vi-VN')}\n- Check: ${session}\n- Hours: ${action.split("_")[3]} hours\n- Mode: Office\n\n<b>Have a nice work ☀️</b>`,
@@ -105,9 +137,6 @@ export const handleCheckinRequest = async (chatId: number, userName: string, act
         res.statusCode = 200
         res.setHeader("Content-Type", "text/plain; charset=utf-8")
         res.end(`Check-in thành công cho người dùng ${userName} (Chat ID: ${chatId})`)
-        // res.end(`
-        //     "Check-in thành công cho người dùng ${userName} (Chat ID: ${chatId})"
-        // `);
     } catch (error) {
         res.statusCode = 500
         res.end(`Đã xảy ra lỗi: ${error}`)
@@ -165,7 +194,6 @@ export const handleGetMacRequest = async (chatId: number, res: http.ServerRespon
 
     try {
         const userData = await redisClient.get(`user:${chatId}`);
-        console.log("Test: ", userData);
 
         if (!userData) {
             res.statusCode = 500;
@@ -213,8 +241,10 @@ export const handleGetMacRequest = async (chatId: number, res: http.ServerRespon
                     reply_markup: {
                         inline_keyboard: [
                             [
-                                { text: "Approve ✅", callback_data: `register_approve_${chatId}` },
-                                { text: "Reject ❌", callback_data: `register_reject_${chatId}` }
+                                // { text: "Approve ✅", callback_data: `register_approve_${chatId}` },
+                                { text: "FullTime ✅", callback_data: `register_approve_${chatId}_fulltime` },
+                                { text: "PartTime ✅", callback_data: `register_approve_${chatId}_parttime` },
+                                { text: "Reject ❌", callback_data: `register_reject_${chatId}_none` }
                             ]
                         ]
                     },

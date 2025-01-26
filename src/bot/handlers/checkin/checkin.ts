@@ -38,7 +38,7 @@ export const handleCheckin = async (bot: TelegramBot, msg: TelegramBot.Message) 
 
     const jsonStaff = mapStaffFromJson(staff);
     if (jsonStaff?.tele_account) {
-        if (!isOutOfWorkingHours()) {
+        if (isOutOfWorkingHours()) {
             const checkinResult = await isValidNewCheckin(jsonStaff.tele_account.id);
             if (!checkinResult.isValid) {
                 console.log('User has already checked in for OT or Time in lieu');
@@ -75,7 +75,7 @@ export const handleCheckin = async (bot: TelegramBot, msg: TelegramBot.Message) 
 
     await setUserSession(chatId, { command: "/checkin", listener: messageListener });
 
-    if (!isOutOfWorkingHours()) {
+    if (isOutOfWorkingHours()) {
         await handleCheckinSpecial(bot, chatId);
     }
     else if (jsonStaff?.type_staff === "parttime") {
@@ -159,7 +159,7 @@ export const handleCheckinSpecial = async (bot: TelegramBot, chatId: number) => 
 export const handleSpecialDurationPartTime = async (bot: TelegramBot, chatId: number) => {
     const existingSession = await getUserSession(chatId);
     if (existingSession?.listener) {
-        bot.off("message", existingSession.listener); // Xóa listener cũ
+        bot.off("message", existingSession.listener);
     }
 
     const messageListener = async (response: TelegramBot.Message) => {
@@ -211,7 +211,7 @@ export const handleSpecialDuration = async (
 
     const existingSession = await getUserSession(chatId);
     if (existingSession?.listener) {
-        bot.off("message", existingSession.listener); // Xóa listener cũ
+        bot.off("message", existingSession.listener);
     }
 
     const messageListener = async (response: TelegramBot.Message) => {
@@ -274,7 +274,6 @@ export const handleSpecialTimeSelection = async (bot: TelegramBot, chatId: numbe
         return;
     }
 
-    // in ra type, userId, time để kiểm tra
     console.log(`type: ${nameType}, userId: ${userId}, duration: ${duration}, shiftId: ${shift.id}`);
 
     await bot.answerCallbackQuery(callbackQuery.id, { text: `You have selected ${duration} hours of work time` });
@@ -286,7 +285,7 @@ export const handleSpecialTimeSelection = async (bot: TelegramBot, chatId: numbe
     const portServer = process.env.PORT_SERVER || 3000;
 
     const checkinUrl = `http://${ipServer}:${portServer}/check-device?chatId=${chatId}&userName=${encodeURIComponent(userName)}&action=checkin_special_${nameType}_${duration}&shiftId=${shift.id}`;
-    await bot.sendMessage(chatId, "Please click the button below to check-in.", {
+    const message = await bot.sendMessage(chatId, "Please click the button below to check-in.", {
         reply_markup: {
             inline_keyboard: [
                 [
@@ -297,12 +296,13 @@ export const handleSpecialTimeSelection = async (bot: TelegramBot, chatId: numbe
         parse_mode: "HTML",
     });
 
+    setUserData(chatId, "messageId", message.message_id);
     // await deleteUserSession(chatId);
     // await handleReportCheckin(bot, chatId, userName, shift.id);
 }
 
 export const handleReportCheckin = async (bot: TelegramBot, chatId: number, userName: string, shiftId: string, ) => {
-    await bot.sendMessage(chatId, "Please report your planned work for today (at least 6 characters).", {
+    bot.sendMessage(chatId, "Please report your planned work for today (at least 6 characters).", {
         parse_mode: "HTML",
     });
 
@@ -326,14 +326,14 @@ export const handleReportCheckin = async (bot: TelegramBot, chatId: number, user
         const workReport = response.text?.trim();
 
         if (workReport && workReport.startsWith('/')) {
-            await bot.sendMessage(chatId, "Your report cannot start with '/'. Please provide a valid work report.", {
+            bot.sendMessage(chatId, "Your report cannot start with '/'. Please provide a valid work report.", {
                 parse_mode: "HTML",
             });
             return;
         }
 
         if (!workReport || workReport.length < 6) {
-            await bot.sendMessage(
+            bot.sendMessage(
                 chatId,
                 "Your report is too short. Please provide a detailed report (at least 6 characters).",
                 { parse_mode: "HTML" }

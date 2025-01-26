@@ -40,7 +40,7 @@ export const handleRegister = async (bot: TelegramBot, msg: TelegramBot.Message)
 
     const existingSession = await getUserSession(chatId);
     if (existingSession?.listener) {
-        bot.off("message", existingSession.listener); // Xóa listener cũ
+        bot.off("message", existingSession.listener); 
     }
 
     const messageListener = async (response: TelegramBot.Message) => {
@@ -153,7 +153,7 @@ export const handleEmail = async (bot: TelegramBot, callbackQuery: TelegramBot.C
 
     const existingSession = await getUserSession(chatId);
     if (existingSession?.listener) {
-        bot.off("message", existingSession.listener); // Xóa listener cũ
+        bot.off("message", existingSession.listener); 
     }
 
     const departmentId = callbackQuery.data.split("_")[2];
@@ -164,11 +164,12 @@ export const handleEmail = async (bot: TelegramBot, callbackQuery: TelegramBot.C
     const messageListener = async (response: TelegramBot.Message) => {
         if (response.chat.id !== chatId) return;
 
-        if (response.text?.trim() === "/cancel") {
-            bot.off("message", messageListener);
-            await deleteUserSession(chatId);
-            
-            // await bot.sendMessage(chatId, "Action canceled.");
+        if (response.text?.trim().startsWith("/")) {
+            if (response.text.trim() === "/cancel") {
+                bot.off("message", messageListener);
+                await deleteUserSession(chatId);
+                return;
+            }
             return;
         }
 
@@ -205,16 +206,18 @@ export const handleFullName = async (bot: TelegramBot, callbackQuery: TelegramBo
 
     const existingSession = await getUserSession(chatId);
     if (existingSession?.listener) {
-        bot.off("message", existingSession.listener); // Xóa listener cũ
+        bot.off("message", existingSession.listener); 
     }
 
     const messageListener = async (response: TelegramBot.Message) => {
         if (response.chat.id !== chatId) return;
 
-        if (response.text?.trim() === "/cancel") {
-            bot.off("message", messageListener);
-            await deleteUserSession(chatId);
-            // await bot.sendMessage(chatId, "Action canceled.");
+        if (response.text?.trim().startsWith("/")) {
+            if (response.text.trim() === "/cancel") {
+                bot.off("message", messageListener);
+                await deleteUserSession(chatId);
+                return;
+            }
             return;
         }
 
@@ -226,7 +229,6 @@ export const handleFullName = async (bot: TelegramBot, callbackQuery: TelegramBo
             setUserData(chatId, "fullName", fullName);
             await setUserSession(chatId, { command: "typingPhone" });
 
-            // console.log("UserData: ", getUserData(chatId));
             await bot.sendMessage(chatId, `Full name "<b>${fullName}</b>" accepted. Please enter your phone number:`, { parse_mode: "HTML" });
             await handlePhone(bot, callbackQuery);
         } else {
@@ -249,16 +251,18 @@ export const handlePhone = async (bot: TelegramBot, callbackQuery: TelegramBot.C
 
     const existingSession = await getUserSession(chatId);
     if (existingSession?.listener) {
-        bot.off("message", existingSession.listener); // Xóa listener cũ
+        bot.off("message", existingSession.listener); 
     }
 
     const messageListener = async (response: TelegramBot.Message) => {
         if (response.chat.id !== chatId) return;
 
-        if (response.text?.trim() === "/cancel") {
-            bot.off("message", messageListener);
-            await deleteUserSession(chatId);
-            // await bot.sendMessage(chatId, "Action canceled.");
+        if (response.text?.trim().startsWith("/")) {
+            if (response.text.trim() === "/cancel") {
+                bot.off("message", messageListener);
+                await deleteUserSession(chatId);
+                return;
+            }
             return;
         }
 
@@ -347,7 +351,6 @@ export const handleGetMac = async (bot: TelegramBot, callbackQuery: TelegramBot.
     await redisClient.set(`user:${chatId}`, JSON.stringify(userData));
 
     const test = await redisClient.get(`user:${chatId}`);
-    console.log("Test: ", test);
 
     const ipServer = getLocalIp();
     const portServer=process.env.PORT || 3000;
@@ -375,9 +378,9 @@ export const handleRegisterAdmin = async (bot: TelegramBot, type: string, callba
         return;
     }
 
-    console.log("Xem ne cuuuu",callbackQuery.data);
-    const chatId = callbackQuery.data.split("_")[2];
+    const [chatId, typeStaff] = callbackQuery.data.split("_").slice(2,4);
     console.log("Chat ID: ", chatId);
+    console.log("Type Staff: ", typeStaff);
 
     await bot.editMessageReplyMarkup(
         {
@@ -395,13 +398,13 @@ export const handleRegisterAdmin = async (bot: TelegramBot, type: string, callba
     ).catch((err) => console.error('Error while editing button:', err.message));
     
     if (type === 'approve') {
-        await updateStatusStaffByTeleId(chatId, 'approved');
+        await updateStatusStaffByTeleId(chatId, 'approved', typeStaff);
 
         await bot.sendMessage(chatId, `✅ Your registation request has been approved by Admin. 🎉`);
         await bot.sendMessage(idAdmin, `✅ You were approved for the registration on the request.`);
     }
     else if (type === 'reject') {
-        await updateStatusStaffByTeleId(chatId, 'rejected');
+        await updateStatusStaffByTeleId(chatId, 'rejected', typeStaff);
 
         await bot.sendMessage(chatId, `❌ Your registation request has been approved by Admin.`);
         await bot.sendMessage(idAdmin, `❌ You were approved for the registration on the request.`);

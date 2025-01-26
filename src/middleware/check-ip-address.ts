@@ -11,8 +11,6 @@ export const validateMacMiddleware = async (req: http.IncomingMessage, res: http
         userIp = userIp.split(":").pop() || userIp
     }
 
-    console.log(`Địa chỉ IP của thiết bị: ${userIp}`)
-
     try {
         const validMacs = await getAllMacAddress()
 

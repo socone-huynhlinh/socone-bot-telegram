@@ -58,16 +58,13 @@ export const handleAdminResponse = async (bot: TelegramBot) => {
 
             // Register
             else if (action === "register") {
-                console.log("Register response:");
                 if (type === "branch") {
                     await handleDepartment(bot, callbackQuery);
                 }
                 else if (type === "department") {
-                    console.log("Department response:");
                     await handleEmail(bot, callbackQuery);
                 }
                 else if (type === "position") {
-                    console.log("Position response:");
                     await handleGetMac(bot, callbackQuery);
                 }
                 else if (type === "approve" || type === "reject") {

@@ -20,6 +20,4 @@ const isOutOfWorkingHours = (): boolean => {
     return false; 
 };
 
-// const test = isOutOfWorkingHours();
-
 export default isOutOfWorkingHours;
