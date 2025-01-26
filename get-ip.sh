@@ -1,1 +1,1 @@
-echo -e "VPS_IP=$(ipconfig getifaddr en0)" >> .env
+echo -e "\nVPS_IP=$(ipconfig getifaddr en0)" >> .env

@@ -42,7 +42,11 @@ docker-compose --version
 **1. Clone the repository and cd into the project directory**
 
 **2. Run the following command to start the project**
-Get Ip address local
+Get Ip address (it will get you ip private) if this the first time run this project
+
+```bash
+bash get-ip.sh
+```
 
 **3. You need to run docker desktop app to run this project**
 
@@ -56,15 +60,11 @@ TELEGRAM_BOT_TOKEN=
 
 **5. Run the following command to start the project**
 
-```bash
-bash get-ip.sh
-```
-
 Build docker image and runn docker container
 
 ```bash
 docker-compose build
-docker-compose up
+docker-compose up -d
 ```
 
 **Describe about .env file**
@@ -82,12 +82,12 @@ docker-compose up
 **6.(Optional) Run the following command to stop the project and remove the container**
 
 ```bash
-docker-compose down -v
+docker-compose down
 ```
 
-**7. You want to build again, you can run the following command**
+**7. (Optional) You want to build again, you can run the following command**
 
 ```bash
 docker-compose build
-docker-compose up
+docker-compose up -d
 ```
