@@ -44,6 +44,8 @@ docker-compose --version
 **2. Run the following command to start the project**
 Get Ip address local
 
+**3. You need to run docker desktop app to run this project**
+
 ```bash
 bash get-ip.sh
 ```
@@ -51,7 +53,8 @@ bash get-ip.sh
 Build docker image
 
 ```bash
-docker-compose build -d --build
+docker-compose build
+docker-compose up
 ```
 
 **When the build is complete, you can use telegram bot with your bot token add into file .env**
